@@ -1,0 +1,6 @@
+alembic
+sqlalchemy
+asyncpg
+python-dotenv
+psycopg2-binary
+black

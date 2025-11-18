@@ -1,0 +1,30 @@
+name: wb
+
+services:
+    database:
+        image: postgres:16
+        restart: always
+        env_file:
+            - .env
+        volumes:
+            - data:/var/lib/postgresql/data
+        ports:
+            - "${DB_PORT}:5432" 
+
+    api:
+        build: 
+            context: .
+            dockerfile: Dockerfile
+        env_file:
+            - .env
+        environment:
+            DB_HOST: database 
+        volumes:
+            - .:/app 
+        depends_on:
+            - database
+        command: ["/bin/sh", "-c", "tail -f /dev/null"]
+
+volumes:
+    data:
+        driver: local
