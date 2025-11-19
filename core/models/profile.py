@@ -1,5 +1,6 @@
 import sqlalchemy as sa
-from sqlalchemy import Column, Date, ForeignKey, String
+from sqlalchemy import BigInteger, Boolean, Column, Date, ForeignKey, String
+from sqlalchemy.orm import relationship
 
 from core.models.base import Base
 
@@ -14,18 +15,24 @@ class ProfileOrm(Base):
     employee_id = Column(
         sa.BigInteger,
         ForeignKey("employee.eid", ondelete="CASCADE"),
-        primary_key=True,
+        unique=True,
+        nullable=False,
         comment="Связь с таблицей Employee (EID)",
     )
 
-    personal_phone = Column(String, comment="Личный телефон")
-    telegram = Column(String, unique=True, comment="Telegram")
-    about_me = Column(String, comment="О себе (текст)")
-
-    vacation_info = Column(String, comment="Информация об отпуске")
-
     avatar_id = Column(
-        ForeignKey("file.id"), comment="Файл с аватаром", nullable=True
+        ForeignKey("file.id"),
+        comment="Файл с аватаром (Редактируемый)",
+        nullable=True,
+    )
+
+    personal_phone = Column(String, comment="Личный телефон (Редактируемый)")
+
+    telegram = Column(String, comment="Telegram (Редактируемый)")
+
+    about_me = Column(
+        String(1000),
+        comment="О себе (текст, до 1 000 символов, Редактируемый)",
     )
 
 
@@ -37,10 +44,65 @@ class ProfileProjectOrm(Base):
     )
 
     profile_id = Column(
-        ForeignKey("profile.id"), comment="Профиль", nullable=False
+        sa.BigInteger,
+        ForeignKey("profile.id", ondelete="CASCADE"),
+        nullable=False,
+        comment="Профиль",
     )
 
-    name = Column(String, comment="Название проекта")
-    start_d = Column(Date, comment="Дата начала проекта")
-    end_d = Column(Date, comment="Дата конца проекта")
-    position = Column(String, comment="Роль в проекте")
+    name = Column(
+        String,
+        nullable=False,
+        comment="Краткое название проекта (Редактируемый)",
+    )
+
+    start_d = Column(
+        Date, comment="Период: Дата начала проекта (Редактируемый)"
+    )
+
+    end_d = Column(Date, comment="Период: Дата конца проекта (Редактируемый)")
+
+    position = Column(String, comment="Роль в проекте (Редактируемый)")
+
+    link = Column(String, comment="Ссылка (YouTrack/другое) (Редактируемый)")
+
+
+class ProfileVacationOrm(Base):
+    __tablename__ = "profile_vacation"
+
+    id = Column(
+        sa.BigInteger, primary_key=True, autoincrement=True, nullable=False
+    )
+
+    profile_id = Column(
+        sa.BigInteger,
+        ForeignKey("profile.id", ondelete="CASCADE"),
+        nullable=False,
+        comment="Профиль сотрудника",
+    )
+
+    is_planned = Column(
+        Boolean,
+        nullable=False,
+        default=True,
+        comment="Статус: True - планируется, False - текущий/завершенный",
+    )
+
+    start_date = Column(Date, nullable=False, comment="Дата начала отпуска")
+    end_date = Column(Date, nullable=False, comment="Дата конца отпуска")
+
+    substitute_eid = Column(
+        BigInteger,
+        ForeignKey("employee.eid"),
+        nullable=True,
+        comment="Замещающий сотрудник",
+    )
+
+    comment = Column(String, comment="Комментарий к отпуску (Редактируемый)")
+
+    is_official = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="Официальный статус из HR (read-only, контролирует фактический флаг 'в отпуске')",
+    )
