@@ -1,8 +1,8 @@
 """new_migration
 
-Revision ID: 16cfedca2c79
+Revision ID: e512fa917d49
 Revises:
-Create Date: 2025-11-19 12:12:14.590599
+Create Date: 2025-11-19 12:16:59.592452
 
 """
 
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = "16cfedca2c79"
+revision = "e512fa917d49"
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -134,6 +134,46 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("eid", name=op.f("pk_employee")),
         sa.UniqueConstraint("work_email", name=op.f("uq_employee_work_email")),
+    )
+    op.create_table(
+        "auth_token",
+        sa.Column("id", sa.BigInteger(), autoincrement=True, nullable=False),
+        sa.Column(
+            "employee_eid",
+            sa.BigInteger(),
+            nullable=False,
+            comment="Связь с таблицей Employee (EID) - владелец токена",
+        ),
+        sa.Column(
+            "token",
+            sa.String(length=512),
+            nullable=False,
+            comment="Token или Session ID",
+        ),
+        sa.Column(
+            "expires_at",
+            sa.DateTime(timezone=True),
+            nullable=True,
+            comment="Дата и время истечения срока действия токена",
+        ),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=True,
+            comment="Время создания записи",
+        ),
+        sa.ForeignKeyConstraint(
+            ["employee_eid"],
+            ["employee.eid"],
+            name=op.f("fk_auth_token_employee_eid_employee"),
+            ondelete="CASCADE",
+        ),
+        sa.PrimaryKeyConstraint("id", name=op.f("pk_auth_token")),
+        sa.UniqueConstraint(
+            "employee_eid", name=op.f("uq_auth_token_employee_eid")
+        ),
+        sa.UniqueConstraint("token", name=op.f("uq_auth_token_token")),
     )
     op.create_table(
         "profile",
@@ -289,6 +329,7 @@ def downgrade() -> None:
     op.drop_table("profile_vacation")
     op.drop_table("profile_project")
     op.drop_table("profile")
+    op.drop_table("auth_token")
     op.drop_table("employee")
     op.drop_table("file")
     op.drop_table("department")
