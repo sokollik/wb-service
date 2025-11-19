@@ -1,11 +1,15 @@
 import sqlalchemy as sa
-from sqlalchemy import Column, ForeignKey, String, Text
+from sqlalchemy import Column, Date, ForeignKey, String
 
 from core.models.base import Base
 
 
-class Profile(Base):
+class ProfileOrm(Base):
     __tablename__ = "profile"
+
+    id = Column(
+        sa.BigInteger, primary_key=True, autoincrement=True, nullable=False
+    )
 
     employee_id = Column(
         sa.BigInteger,
@@ -14,12 +18,29 @@ class Profile(Base):
         comment="Связь с таблицей Employee (EID)",
     )
 
-    avatar_url = Column(String, comment="URL аватара")
     personal_phone = Column(String, comment="Личный телефон")
-    telegram_handle = Column(String, unique=True, comment="Telegram хендл")
-    about_me = Column(Text, comment="О себе (текст)")
+    telegram = Column(String, unique=True, comment="Telegram")
+    about_me = Column(String, comment="О себе (текст)")
 
-    projects_list = Column(
-        Text, comment="Список проектов (например, JSON-массив)"
+    vacation_info = Column(String, comment="Информация об отпуске")
+
+    avatar_id = Column(
+        ForeignKey("file.id"), comment="Файл с аватаром", nullable=True
     )
-    vacation_info = Column(Text, comment="Информация об отпуске")
+
+
+class ProfileProjectOrm(Base):
+    __tablename__ = "profile_project"
+
+    id = Column(
+        sa.BigInteger, primary_key=True, autoincrement=True, nullable=False
+    )
+
+    profile_id = Column(
+        ForeignKey("profile.id"), comment="Профиль", nullable=False
+    )
+
+    name = Column(String, comment="Название проекта")
+    start_d = Column(Date, comment="Дата начала проекта")
+    end_d = Column(Date, comment="Дата конца проекта")
+    position = Column(String, comment="Роль в проекте")

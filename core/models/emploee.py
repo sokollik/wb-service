@@ -1,13 +1,10 @@
-from core.models.base import Base
 import sqlalchemy as sa
-from sqlalchemy import (
-    Column,
-    Date,
-    String,
-)
+from sqlalchemy import Column, Date, String
+
+from core.models.base import Base
 
 
-class Employee(Base):
+class EmployeeOrm(Base):
     __tablename__ = "employee"
 
     eid = Column(
