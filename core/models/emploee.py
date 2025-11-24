@@ -7,9 +7,6 @@ from core.models.base import Base
 class EmployeeOrm(Base):
     __tablename__ = "employee"
 
-    # ТЗ 1.3: Карточка профиля: Состав: ... EID/ID
-    # ТЗ 1.3: Данные профиля: Поля (часть read-only из HR): EID/ID
-    # ТЗ 1.4: Read-only поля: ... ФИО, должность, подразделение, руководитель, HR BP, рабочие контакты.
     eid = Column(
         sa.BigInteger,
         primary_key=True,
@@ -80,3 +77,6 @@ class DepartmentOrm(Base):
         nullable=True,
         comment="Родительское подразделение (для иерархии)",
     )
+
+
+

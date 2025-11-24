@@ -1,8 +1,18 @@
 import sqlalchemy as sa
-from sqlalchemy import BigInteger, Boolean, Column, Date, ForeignKey, String
-from sqlalchemy.orm import relationship
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    Enum,
+    ForeignKey,
+    String,
+    func,
+)
 
 from core.models.base import Base
+from core.models.enums import ProfileOperationType
 
 
 class ProfileOrm(Base):
@@ -105,4 +115,67 @@ class ProfileVacationOrm(Base):
         nullable=False,
         default=False,
         comment="Официальный статус из HR (read-only, контролирует фактический флаг 'в отпуске')",
+    )
+
+
+class ProfileChangeLogOrm(Base):
+    __tablename__ = "profile_change_log"
+
+    id = Column(
+        sa.BigInteger, primary_key=True, autoincrement=True, nullable=False
+    )
+
+    profile_id = Column(
+        sa.BigInteger,
+        ForeignKey("profile.id", ondelete="CASCADE"),
+        nullable=False,
+        comment="ID профиля, который был изменен",
+    )
+
+    changed_by_eid = Column(
+        sa.BigInteger,
+        ForeignKey("employee.eid"),
+        nullable=False,
+        comment="EID сотрудника, который внес изменение",
+    )
+
+    changed_at = Column(
+        DateTime,
+        nullable=False,
+        server_default=func.now(),
+        comment="Дата и время изменения",
+    )
+
+    table_name = Column(
+        String(50),
+        nullable=False,
+        comment="Название таблицы",
+    )
+
+    record_id = Column(
+        sa.BigInteger,
+        nullable=True,
+        comment="ID записи в таблице",
+    )
+
+    field_name = Column(
+        String,
+        nullable=False,
+        comment="Название измененного поля",
+    )
+
+    old_value = Column(
+        String,
+        nullable=True,
+        comment="Старое значение (JSON или строка)",
+    )
+
+    new_value = Column(
+        String,
+        nullable=True,
+        comment="Новое значение (JSON или строка)",
+    )
+
+    operation = Column(
+        Enum(ProfileOperationType), nullable=False, comment="Тип операции"
     )
