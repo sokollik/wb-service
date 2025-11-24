@@ -2,3 +2,5 @@
 Backend-сервис для корпоративного портала
 
 пишите make start-dev и будет счастье
+
+запуск api python main.py

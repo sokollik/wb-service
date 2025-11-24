@@ -1,5 +1,6 @@
 import sqlalchemy as sa
 from sqlalchemy import BigInteger, Column, Date, ForeignKey, String
+from sqlalchemy.orm import relationship
 
 from core.models.base import Base
 
@@ -64,6 +65,11 @@ class EmployeeOrm(Base):
         comment="HR-бизнес-партнёр (read-only HR)",
     )
 
+    department = relationship("DepartmentOrm", back_populates="employees")
+    manager = relationship("EmployeeOrm", remote_side="EmployeeOrm.eid", foreign_keys=[manager_eid], backref="subordinates")
+    hrbp = relationship("EmployeeOrm", remote_side="EmployeeOrm.eid", foreign_keys=[hrbp_eid])
+    profile = relationship("ProfileOrm", back_populates="employee", uselist=False)
+
 
 class DepartmentOrm(Base):
     __tablename__ = "department"
@@ -80,3 +86,6 @@ class DepartmentOrm(Base):
         nullable=True,
         comment="Родительское подразделение (для иерархии)",
     )
+
+    employees = relationship("EmployeeOrm", back_populates="department")
+    

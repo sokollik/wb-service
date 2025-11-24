@@ -35,6 +35,11 @@ class ProfileOrm(Base):
         comment="О себе (текст, до 1 000 символов, Редактируемый)",
     )
 
+    employee = relationship("EmployeeOrm", back_populates="profile")
+    avatar = relationship("FileOrm")
+    projects = relationship("ProfileProjectOrm", back_populates="profile")
+    vacations = relationship("ProfileVacationOrm", back_populates="profile")
+
 
 class ProfileProjectOrm(Base):
     __tablename__ = "profile_project"
@@ -65,6 +70,8 @@ class ProfileProjectOrm(Base):
     position = Column(String, comment="Роль в проекте (Редактируемый)")
 
     link = Column(String, comment="Ссылка (YouTrack/другое) (Редактируемый)")
+
+    profile = relationship("ProfileOrm", back_populates="projects")
 
 
 class ProfileVacationOrm(Base):
@@ -106,3 +113,6 @@ class ProfileVacationOrm(Base):
         default=False,
         comment="Официальный статус из HR (read-only, контролирует фактический флаг 'в отпуске')",
     )
+
+    profile = relationship("ProfileOrm", back_populates="vacations")
+    

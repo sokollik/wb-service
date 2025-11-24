@@ -23,7 +23,7 @@ services:
             - .:/app 
         depends_on:
             - database
-        command: ["/bin/sh", "-c", "tail -f /dev/null"]
+        command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 volumes:
     data:
