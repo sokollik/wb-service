@@ -9,9 +9,11 @@ TIME ?= 10m
 
 ## Запуск/Перезапуск проекта
 start-dev:
+	docker compose -f docker-compose.yaml down
 	docker compose -f docker-compose.yaml up --build -d
-	$(SLEEP) 2
+	$(SLEEP) 3
 	docker compose -f docker-compose.yaml exec -w /app api python -m alembic upgrade head
+	docker compose -f docker-compose.yaml exec database psql -U postgres -d postgres -f /dumps/main.sql
 
 ## Обновление базы данных (Применение новых миграций)
 update-db-dev:

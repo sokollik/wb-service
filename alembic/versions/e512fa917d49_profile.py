@@ -1,4 +1,4 @@
-"""new_migration
+"""profile
 
 Revision ID: e512fa917d49
 Revises:
@@ -6,9 +6,9 @@ Create Date: 2025-11-19 12:16:59.592452
 
 """
 
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "e512fa917d49"
