@@ -1,8 +1,9 @@
-from sqlalchemy import alias, func, select
+from sqlalchemy import alias, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.models.emploee import EmployeeOrm, DepartmentOrm
 from core.models.profile import ProfileOrm, ProfileProjectOrm, ProfileVacationOrm
+from core.schemas.profile_schema import ProfileUpdateSchema
 
 
 class ProfileRepository:
@@ -110,6 +111,25 @@ class ProfileRepository:
             .mappings()
             .one_or_none()
         )
-
-        print(profile)
         return profile
+
+    async def update_profile(self, eid: int, profile_data: ProfileUpdateSchema):
+
+        profile_id_result = await self.session.execute(
+            select(ProfileOrm.id).where(ProfileOrm.employee_id == eid)
+        )
+        profile_id = profile_id_result.scalar_one_or_none()
+
+        update_fields = profile_data.model_dump(
+            include={"personal_phone", "telegram", "about_me"},
+            exclude_none=True,
+        )
+
+        if update_fields:
+            await self.session.execute(
+                update(ProfileOrm)
+                .where(ProfileOrm.id == profile_id)
+                .values(**update_fields)
+            )
+
+        return await self.get_profile(eid=eid)

@@ -39,3 +39,9 @@ class ProfileSchema(BaseModel):
     about_me: str | None = Field(None)
     projects: list[ProjectSchema] | None = Field(None)
     vacations: list[VacationSchema] | None = Field(None)
+
+
+class ProfileUpdateSchema(BaseModel):
+    personal_phone: str | None = Field(None)
+    telegram: str | None = Field(None)
+    about_me: str | None = Field(None)
