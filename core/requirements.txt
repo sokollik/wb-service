@@ -18,3 +18,5 @@ pillow
 python-multipart
 pandas
 xlsxwriter
+fastapi-restful==0.6.0
+
