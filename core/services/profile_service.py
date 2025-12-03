@@ -19,11 +19,8 @@ class ProfileService:
 
     async def update_my_profile(
         self, eid: int, profile_data: ProfileUpdateSchema
-    ) -> ProfileSchema:
+    ):
 
         updated_profile = await self.profile_repo.update_profile(
             eid=eid, profile_data=profile_data
         )
-
-        await self.session.commit()
-        return ProfileSchema.model_validate(updated_profile)
