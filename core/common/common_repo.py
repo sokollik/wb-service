@@ -112,9 +112,7 @@ class CommonRepository:
         if not isinstance(where_stmt, tuple):
             where_stmt = (where_stmt,)
 
-        result = await self.session.execute(
-            delete(from_table).where(*where_stmt)
-        )
+        result = await self.session.execute(delete(from_table).where(*where_stmt))
         await self.session.flush()
         return result.rowcount
 
