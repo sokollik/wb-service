@@ -1,7 +1,6 @@
 from functools import wraps
 from fastapi import HTTPException
-from src.common.common_exc import IntervalServerErrorHttpException
-
+from core.common.common_exc import IntervalServerErrorHttpException
 
 
 def exception_handler(func):

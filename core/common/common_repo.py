@@ -2,7 +2,7 @@ from typing import List, Optional, TypeVar
 
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.common.common_schema import DependencyCheckSchema
+from core.common.common_schema import DependencyCheckSchema
 
 T = TypeVar("T")
 
@@ -112,9 +112,7 @@ class CommonRepository:
         if not isinstance(where_stmt, tuple):
             where_stmt = (where_stmt,)
 
-        result = await self.session.execute(
-            delete(from_table).where(*where_stmt)
-        )
+        result = await self.session.execute(delete(from_table).where(*where_stmt))
         await self.session.flush()
         return result.rowcount
 
