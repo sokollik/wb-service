@@ -1,13 +1,18 @@
 import os
+from typing import List
+
 from fastapi import APIRouter, Depends
 from fastapi_restful.cbv import cbv
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.schemas.profile_schema import ProfileSchema, ProfileUpdateSchema
+from core.schemas.profile_schema import (
+    ProfileChangeLogSchema,
+    ProfileSchema,
+    ProfileUpdateSchema,
+)
 from core.services.profile_service import ProfileService
 from core.utils.common_util import exception_handler
 from core.utils.db_util import get_session_obj
-from sqlalchemy.ext.asyncio import AsyncSession
-
 
 profile_controller = APIRouter()
 
@@ -37,6 +42,11 @@ class ProfileController:
     @exception_handler
     async def edit_profile(self, eid: int, profile_data: ProfileUpdateSchema):
 
-        return await self.profile_service.update_my_profile(
+        return await self.profile_service.update_profile(
             eid=eid, profile_data=profile_data
         )
+
+    @profile_controller.get("/log")
+    @exception_handler
+    async def get_profile_edit_log(self, eid: int) -> List[ProfileChangeLogSchema]:
+        return await self.profile_service.get_profile_edit_log(eid=eid)
