@@ -133,7 +133,8 @@ INSERT INTO employee (eid, full_name, position, department_id, birth_date, hire_
 -- HR
 (13, 'Васильев Николай Сергеевич', 'HR Manager', 7, '1986-07-15', '2014-10-01', '+7-495-123-4513', 'n.vasiliev@company.com', 'E2', 2, NULL),
 (14, 'Романова Светлана Олеговна', 'HR Specialist', 7, '1992-11-09', '2019-04-10', '+7-495-123-4514', 's.romanova@company.com', 'E1', 13, NULL),
-(15, 'Павлов Игорь Андреевич', 'Office Manager', 8, '1989-03-17', '2016-02-15', '+7-495-123-4515', 'i.pavlov@company.com', 'E1', 2, NULL);
+(15, 'Павлов Игорь Андреевич', 'Office Manager', 8, '1989-03-17', '2016-02-15', '+7-495-123-4515', 'i.pavlov@company.com', 'E1', 2, NULL),
+(16, 'Полеткина Елена Никитична', 'Middle Developer', 4, '1995-12-08', '2021-10-01', '+7-995-923-4507', 'e.polet@company.com', 'E0', 4, 2);
 
 -- Сброс sequence для employee
 SELECT setval('employee_eid_seq', (SELECT MAX(eid) FROM employee));
@@ -157,7 +158,9 @@ INSERT INTO profile (id, employee_id, avatar_id, personal_phone, telegram, about
 (12, 12, NULL, '+7-917-121-2121', '@kozlova_ops', 'DevOps инженер, работаю с облачными платформами и автоматизацией инфраструктуры.'),
 (13, 13, NULL, '+7-917-131-3131', '@vasiliev_hr', 'HR менеджер с фокусом на рекрутинг IT специалистов. Помогаю находить лучшие таланты.'),
 (14, 14, NULL, '+7-917-141-4141', '@romanova_hr', 'HR специалист, занимаюсь адаптацией новых сотрудников и корпоративными мероприятиями.'),
-(15, 15, NULL, '+7-917-151-5151', '@pavlov_office', 'Office менеджер, забочусь о комфорте в офисе. Организую teambuilding мероприятия.');
+(15, 15, NULL, '+7-917-151-5151', '@pavlov_office', 'Office менеджер, забочусь о комфорте в офисе. Организую teambuilding мероприятия.'),
+(16, 16, NULL, '+7-907-151-5151', '@polet_office', 'я помогаю сильно');
+
 
 -- Сброс sequence для profile
 SELECT setval('profile_id_seq', (SELECT MAX(id) FROM profile));
