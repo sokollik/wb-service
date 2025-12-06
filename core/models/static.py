@@ -1,5 +1,5 @@
 import sqlalchemy as sa
-from sqlalchemy import Column, String
+from sqlalchemy import Column, Integer, String
 
 from core.models.base import Base
 
@@ -11,3 +11,4 @@ class FileOrm(Base):
     )
     name = Column(String)
     path = Column(String)
+    created_by = Column(Integer)
