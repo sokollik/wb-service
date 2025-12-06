@@ -83,6 +83,7 @@ class ProfileRepository:
                         EmployeeOrm.work_band.label("work_band"),
                         DepartmentOrm.name.label("department"),
                         ProfileOrm.personal_phone.label("personal_phone"),
+                        ProfileOrm.avatar_id.label("avatar_id"),
                         ProfileOrm.telegram.label("telegram"),
                         ProfileOrm.about_me.label("about_me"),
                         ManagerORM.c.full_name.label("manager_name"),

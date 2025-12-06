@@ -26,6 +26,7 @@ class VacationSchema(BaseModel):
 class ProfileSchema(BaseModel):
     eid: int = Field(..., description="ID работника")
     full_name: str = Field(...)
+    avatar_id: int | None = Field(None)
     position: str = Field(...)
     department: str = Field(...)
     birth_date: date = Field(...)
@@ -51,6 +52,7 @@ class ProjectUpdateSchema(BaseModel):
 
 
 class ProfileUpdateSchema(BaseModel):
+    avatar_id: int | None = Field(None)
     personal_phone: str | None = Field(None)
     telegram: str | None = Field(None)
     about_me: str | None = Field(None)
@@ -66,8 +68,8 @@ class ProfileChangeLogSchema(BaseModel):
     record_id: int | None = Field(None)
     field_name: str = Field(...)
 
-    old_value: Union[str, Dict[str, Any], List[Any], bool] | None = Field(None)
-    new_value: Union[str, Dict[str, Any], List[Any], bool] | None = Field(None)
+    old_value: Union[str, Dict[str, Any], List[Any], bool, int] | None = Field(None)
+    new_value: Union[str, Dict[str, Any], List[Any], bool, int] | None = Field(None)
 
     operation: Any = Field(...)
 
