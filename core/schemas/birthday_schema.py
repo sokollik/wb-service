@@ -8,6 +8,13 @@ class BirthdaySchema(BaseModel):
     full_name: str = Field(...)
     department: str = Field(...)
     birth_date: date = Field(...)
-    
+    telegram: str | None = Field(None)
+    telegram_birthday_link: str | None = Field(None)
+
+
 class BirthdayListSchema(BaseModel):
     birthdays: List[BirthdaySchema]
+
+
+class TelegramLinkSchema(BaseModel):
+    telegram_link: str = Field(...)
