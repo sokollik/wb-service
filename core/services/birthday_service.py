@@ -1,8 +1,13 @@
 from datetime import date, timedelta
 from typing import List, Literal
+from urllib.parse import quote_plus
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.repositories.birthday_repo import BirthdayRepository
 from core.schemas.birthday_schema import BirthdaySchema
+
+BIRTHDAY_MESSAGE = (
+    "Привет, c днём рождения! Желаю счастья, успехов и исполнения всех желаний!"
+)
 
 
 class BirthdayService:
@@ -44,4 +49,13 @@ class BirthdayService:
 
         return upcoming_birthdays
 
+    async def get_telegram_link_for_birthday(self, eid: int) -> str:
+        telegram_username = await self.birthday_repo.get_telegram(eid)
+        if telegram_username:
+            encoded_message = quote_plus(BIRTHDAY_MESSAGE)
+            link = (
+                f"https://t.me/{telegram_username.lstrip('@')}?&text={encoded_message}"
+            )
+            return link
 
+        return None
