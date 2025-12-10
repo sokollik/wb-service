@@ -4,7 +4,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.common.common_repo import CommonRepository
 
 from core.models.emploee import EmployeeOrm, DepartmentOrm
-from core.models.profile import ProfileOrm
 
 
 class BirthdayRepository:
@@ -32,12 +31,3 @@ class BirthdayRepository:
 
         result = await self.session.execute(birthdays)
         return result.mappings().all()
-
-    async def get_telegram(self, eid: int) -> str:
-        telegram = select(ProfileOrm.telegram.label("telegram")).where(
-            ProfileOrm.employee_id == eid
-        )
-
-        result = await self.session.execute(telegram)
-        telegram_username = result.scalar_one_or_none()
-        return telegram_username

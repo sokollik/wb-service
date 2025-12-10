@@ -36,12 +36,11 @@ class BirthdayController:
     @birthday_controller.get("/link")
     @exception_handler
     async def get_birthday_telegram_link(
-        self,
-        eid: int,
+        self, eid: int, message: str
     ) -> TelegramLinkSchema:
 
         telegram_link = await self.birthday_service.get_telegram_link_for_birthday(
-            eid=eid
+            eid=eid, message=message
         )
 
         return TelegramLinkSchema(telegram_link=telegram_link)
