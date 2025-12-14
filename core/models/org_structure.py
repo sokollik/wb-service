@@ -41,13 +41,6 @@ class OrgUnitOrm(Base):
         nullable=True,
         comment="Руководитель данной структурной единицы",
     )
-
-    manager_eid = Column(
-        BigInteger,
-        ForeignKey("employee.eid"),
-        nullable=True,
-        comment="Руководитель подразделения",
-    )
     
     is_temporary = Column(
         Boolean,
