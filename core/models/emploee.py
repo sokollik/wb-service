@@ -1,5 +1,4 @@
-import sqlalchemy as sa
-from sqlalchemy import BigInteger, Column, Date, ForeignKey, String
+from sqlalchemy import BigInteger, Boolean, Column, Date, ForeignKey, String
 
 from core.models.base import Base
 
@@ -8,7 +7,7 @@ class EmployeeOrm(Base):
     __tablename__ = "employee"
 
     eid = Column(
-        sa.BigInteger,
+        BigInteger,
         primary_key=True,
         autoincrement=True,
         nullable=False,
@@ -21,9 +20,9 @@ class EmployeeOrm(Base):
         String, nullable=False, comment="Должность (read-only HR)"
     )
 
-    department_id = Column(
+    organization_unit = Column(
         BigInteger,
-        ForeignKey("department.id"),
+        ForeignKey("organization_unit.id"),
         nullable=True,
         comment="Подразделение",
     )
@@ -46,37 +45,16 @@ class EmployeeOrm(Base):
     )
 
     work_band = Column(String, comment="Band (read-only HR)")
-
-    manager_eid = Column(
-        BigInteger,
-        ForeignKey("employee.eid"),
-        nullable=True,
-        comment="Руководитель (read-only HR)",
-    )
-
     hrbp_eid = Column(
         BigInteger,
         ForeignKey("employee.eid"),
         nullable=True,
         comment="HR-бизнес-партнёр (read-only HR)",
     )
-
-
-class DepartmentOrm(Base):
-    __tablename__ = "department"
-
-    id = Column(
-        sa.BigInteger, primary_key=True, autoincrement=True, nullable=False
+    is_fired = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="Флаг уволенного/архивного сотрудника",
     )
-
-    name = Column(String, nullable=False, comment="Название подразделения")
-
-    parent_id = Column(
-        BigInteger,
-        ForeignKey("department.id"),
-        nullable=True,
-        comment="Родительское подразделение (для иерархии)",
-    )
-
-
 

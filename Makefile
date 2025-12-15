@@ -9,7 +9,7 @@ TIME ?= 10m
 
 ## Запуск/Перезапуск проекта
 start-dev:
-	docker compose -f docker-compose.yaml down
+	docker compose -f docker-compose.yaml down -v
 	docker compose -f docker-compose.yaml up --build -d
 	$(SLEEP) 3
 	docker compose -f docker-compose.yaml exec -w /app api python -m alembic upgrade head
