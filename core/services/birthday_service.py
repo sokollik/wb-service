@@ -1,7 +1,9 @@
 from datetime import date, timedelta
 from typing import List, Literal
 from urllib.parse import quote_plus
+
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from core.common.common_repo import CommonRepository
 from core.models.profile import ProfileOrm
 from core.repositories.birthday_repo import BirthdayRepository

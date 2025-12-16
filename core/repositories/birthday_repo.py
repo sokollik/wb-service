@@ -1,9 +1,10 @@
 from typing import List
+
 from sqlalchemy import extract, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from core.common.common_repo import CommonRepository
 
-from core.models.emploee import EmployeeOrm, DepartmentOrm
+from core.common.common_repo import CommonRepository
+from core.models.emploee import EmployeeOrm
 
 
 class BirthdayRepository:

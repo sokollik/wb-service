@@ -1,8 +1,12 @@
 from sqlalchemy import alias, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.models.emploee import EmployeeOrm, DepartmentOrm
-from core.models.profile import ProfileOrm, ProfileProjectOrm, ProfileVacationOrm
+from core.models.emploee import EmployeeOrm
+from core.models.profile import (
+    ProfileOrm,
+    ProfileProjectOrm,
+    ProfileVacationOrm,
+)
 
 
 class ProfileRepository:

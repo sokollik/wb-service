@@ -208,21 +208,13 @@ class ProfileService:
         await self.session.commit()
 
     def _deserialize_log_value(self, value):
-        """
-        Универсально конвертирует строковое значение из БД в объект Python (словарь/список),
-        если это валидный JSON. Иначе возвращает строку.
-        """
         if value is None:
             return None
 
         try:
-            # Пытаемся декодировать JSON.
-            # Добавлено исключение TypeError для обработки не-строковых значений.
             decoded = json.loads(value)
             return decoded
         except (json.JSONDecodeError, TypeError):
-            # Если декодирование не удалось (невалидный JSON) или 'value' не был строкой,
-            # возвращаем исходное значение.
             return value
 
     async def get_profile_edit_log(self, eid: int):
@@ -237,7 +229,6 @@ class ProfileService:
             where_stmt=ProfileChangeLogOrm.profile_id == profile.id,
         )
 
-        # Преобразуем ORM-объекты в словари, выполняя десериализацию JSON
         processed_logs = []
         for log in logs:
             log_data = {
@@ -253,7 +244,4 @@ class ProfileService:
                 "new_value": self._deserialize_log_value(log.new_value),
             }
             processed_logs.append(log_data)
-        print(processed_logs)
-        # Возвращаем список словарей. Pydantic сможет обработать этот список
-        # и корректно сериализовать вложенные словари/списки в JSON.
         return processed_logs
