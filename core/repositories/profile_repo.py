@@ -1,8 +1,13 @@
 from sqlalchemy import alias, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.models.emploee import EmployeeOrm, DepartmentOrm
-from core.models.profile import ProfileOrm, ProfileProjectOrm, ProfileVacationOrm
+from core.models.emploee import EmployeeOrm
+from core.models.org_structure import OrgUnitOrm
+from core.models.profile import (
+    ProfileOrm,
+    ProfileProjectOrm,
+    ProfileVacationOrm,
+)
 
 
 class ProfileRepository:
@@ -39,7 +44,8 @@ class ProfileRepository:
                 ).label("vacations"),
             )
             .outerjoin(
-                EmployeeOrm, EmployeeOrm.eid == ProfileVacationOrm.substitute_eid
+                EmployeeOrm,
+                EmployeeOrm.eid == ProfileVacationOrm.substitute_eid,
             )
             .group_by(ProfileVacationOrm.profile_id)
             .subquery()
@@ -81,7 +87,7 @@ class ProfileRepository:
                         EmployeeOrm.work_phone.label("work_phone"),
                         EmployeeOrm.work_email.label("work_email"),
                         EmployeeOrm.work_band.label("work_band"),
-                        DepartmentOrm.name.label("department"),
+                        OrgUnitOrm.name.label("org_unit"),
                         ProfileOrm.personal_phone.label("personal_phone"),
                         ProfileOrm.avatar_id.label("avatar_id"),
                         ProfileOrm.telegram.label("telegram"),
@@ -96,19 +102,30 @@ class ProfileRepository:
                         ).label("vacations"),
                     )
                     .where(EmployeeOrm.eid == eid)
-                    .join(DepartmentOrm, DepartmentOrm.id == EmployeeOrm.department_id)
-                    .join(ProfileOrm, ProfileOrm.employee_id == EmployeeOrm.eid)
-                    .outerjoin(ManagerORM, ManagerORM.c.eid == EmployeeOrm.manager_eid)
-                    .outerjoin(HrORM, HrORM.c.eid == EmployeeOrm.hrbp_eid)
                     .outerjoin(
-                        projects_subq, ProfileOrm.id == projects_subq.c.profile_id
+                        OrgUnitOrm,
+                        OrgUnitOrm.id == EmployeeOrm.organization_unit,
                     )
                     .outerjoin(
-                        vacations_subq, ProfileOrm.id == vacations_subq.c.profile_id
+                        ProfileOrm, ProfileOrm.employee_id == EmployeeOrm.eid
+                    )
+                    .outerjoin(
+                        ManagerORM,
+                        ManagerORM.c.eid == OrgUnitOrm.manager_eid,
+                    )
+                    .outerjoin(HrORM, HrORM.c.eid == EmployeeOrm.hrbp_eid)
+                    .outerjoin(
+                        projects_subq,
+                        ProfileOrm.id == projects_subq.c.profile_id,
+                    )
+                    .outerjoin(
+                        vacations_subq,
+                        ProfileOrm.id == vacations_subq.c.profile_id,
                     )
                 )
             )
             .mappings()
             .one_or_none()
         )
+        print(profile)
         return profile

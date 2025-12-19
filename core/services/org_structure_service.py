@@ -1,0 +1,58 @@
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from core.common.common_repo import CommonRepository
+from core.repositories.org_structure_repo import OrgStructureRepository
+from core.schemas.org_structure_schema import (
+    OrgUnitHierarchySchema,
+    OrgUnitManagerSchema,
+)
+
+
+class OrgStructureService:
+
+    def __init__(self, session: AsyncSession):
+        self.session = session
+        self.common = CommonRepository(session=self.session)
+        self.org_structure_repo = OrgStructureRepository(session=self.session)
+
+    async def get_org_structure_hierarchy(self):
+        all_units_mappings = (
+            await self.org_structure_repo.get_org_units()
+        )
+
+        if not all_units_mappings:
+            return []
+        units_by_id = {}
+        root_units = []
+
+        for row_mapping in all_units_mappings:
+
+            unit_dict = dict(row_mapping)
+
+            manager_data = None
+            if unit_dict["manager_eid"] is not None:
+                manager_data = OrgUnitManagerSchema(
+                    eid=unit_dict["manager_eid"],
+                    full_name=unit_dict["manager_full_name"],
+                    position=unit_dict["manager_position"],
+                ).model_dump()
+
+            del unit_dict["manager_eid"]
+            del unit_dict["manager_full_name"]
+            del unit_dict["manager_position"]
+
+            unit_dict["manager"] = manager_data
+            unit_dict["children"] = []
+
+            units_by_id[unit_dict["id"]] = unit_dict
+        for unit_id, unit_dict in units_by_id.items():
+            parent_id = unit_dict.get("parent_id")
+
+            if parent_id is None:
+                root_units.append(unit_dict)
+
+            elif parent_id in units_by_id:
+                units_by_id[parent_id]["children"].append(unit_dict)
+        return [
+            OrgUnitHierarchySchema.model_validate(unit) for unit in root_units
+        ]
