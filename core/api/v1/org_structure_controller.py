@@ -20,12 +20,21 @@ class OrgStructureController:
     ):
         self.session = session
         self.org_structure_service = OrgStructureService(session=session)
-        
-    
 
     @org_structure_controller.get(
-        "/hierarchy", 
+        "/hierarchy",
     )
     @exception_handler
     async def get_full_org_hierarchy(self) -> List[OrgUnitHierarchySchema]:
         return await self.org_structure_service.get_org_structure_hierarchy()
+
+    @org_structure_controller.put(
+        "/move",
+    )
+    @exception_handler
+    async def move_org_unit(
+        self, unit_id: int, new_parent_id: int | None = None
+    ):
+        return await self.org_structure_service.move_org_unit(
+            unit_id=unit_id, new_parent_id=new_parent_id
+        )

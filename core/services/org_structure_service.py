@@ -1,6 +1,11 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.common.common_exc import (
+    NotFoundHttpException,
+    WrongParametersHttpException,
+)
 from core.common.common_repo import CommonRepository
+from core.models.org_structure import OrgUnitOrm
 from core.repositories.org_structure_repo import OrgStructureRepository
 from core.schemas.org_structure_schema import (
     OrgUnitHierarchySchema,
@@ -16,9 +21,7 @@ class OrgStructureService:
         self.org_structure_repo = OrgStructureRepository(session=self.session)
 
     async def get_org_structure_hierarchy(self):
-        all_units_mappings = (
-            await self.org_structure_repo.get_org_units()
-        )
+        all_units_mappings = await self.org_structure_repo.get_org_units()
 
         if not all_units_mappings:
             return []
@@ -56,3 +59,32 @@ class OrgStructureService:
         return [
             OrgUnitHierarchySchema.model_validate(unit) for unit in root_units
         ]
+
+    async def move_org_unit(
+        self, unit_id: int, new_parent_id: int | None = None
+    ):
+        if unit_id == new_parent_id:
+            raise WrongParametersHttpException(params="new_parent_id")
+
+        unit = await self.org_structure_repo.get_org_units(id=unit_id)
+        if not unit:
+            raise NotFoundHttpException(name="org_unit")
+
+        if new_parent_id is not None:
+            new_parent = await self.org_structure_repo.get_org_units(
+                id=new_parent_id
+            )
+            if not new_parent:
+                raise NotFoundHttpException(name="org_unit")
+
+            is_cycle = await self.org_structure_repo.is_parent(
+                parent_id=unit_id, child_id=new_parent_id
+            )
+            if is_cycle:
+                raise WrongParametersHttpException(params="new_parent_id")
+
+        await self.common.update_stmt(
+            table=OrgUnitOrm,
+            where_stmt=(OrgUnitOrm.id == unit_id),
+            values={"parent_id": new_parent_id},
+        )
