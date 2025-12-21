@@ -1,6 +1,9 @@
 import json
 from datetime import date
+from io import BytesIO
 
+import pandas as pd
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.common.common_exc import NotFoundHttpException
@@ -12,7 +15,10 @@ from core.models.profile import (
     ProfileProjectOrm,
 )
 from core.repositories.profile_repo import ProfileRepository
-from core.schemas.profile_schema import ProfileUpdateSchema
+from core.schemas.profile_schema import (
+    ProfileExportFilter,
+    ProfileUpdateSchema,
+)
 
 
 class ProfileService:
@@ -26,10 +32,10 @@ class ProfileService:
         self.profile_repo = ProfileRepository(session=self.session)
 
     async def get_my_profile(self, eid: int):
-        profile = await self.profile_repo.get_profile(eid=eid)
-        if not profile:
+        profiles = await self.profile_repo.get_profile(eid=eid)
+        if not profiles:
             raise NotFoundHttpException(name="profile")
-        return profile
+        return profiles[0]
 
     async def _serialize_value(self, value):
         if value is None:
@@ -262,3 +268,98 @@ class ProfileService:
             }
             processed_logs.append(log_data)
         return processed_logs
+
+    async def export_profiles_to_excel(self, config: ProfileExportFilter):
+        FIELD_MAPPING = {
+            "eid": ("ID сотрудника", "eid"),
+            "full_name": ("ФИО", "full_name"),
+            "position": ("Должность", "position"),
+            "org_unit": ("Подразделение", "org_unit"),
+            "birth_date": ("Дата рождения", "birth_date"),
+            "hire_date": ("Дата найма", "hire_date"),
+            "work_phone": ("Рабочий телефон", "work_phone"),
+            "personal_phone": ("Личный телефон", "personal_phone"),
+            "work_email": ("Корпоративный Email", "work_email"),
+            "work_band": ("Грейд/Band", "work_band"),
+            "telegram": ("Telegram", "telegram"),
+            "manager_name": ("Руководитель", "manager_name"),
+            "hr_name": ("HRBP", "hr_name"),
+            "about_me": ("О себе", "about_me"),
+        }
+
+        raw_data = await self.profile_repo.get_profile()
+
+        requested_fields = config.fields if config.fields else list(FIELD_MAPPING.keys())
+        
+        show_projects = "projects" in requested_fields
+        show_vacations = "vacations" in requested_fields
+
+        employees_list = []
+        projects_list = []
+        vacations_list = []
+
+        for row in raw_data:
+            current_eid = row["eid"]
+            
+            entry = {}
+            for field in requested_fields:
+                if field in FIELD_MAPPING:
+                    label, attr = FIELD_MAPPING[field]
+                    entry[label] = row[attr]
+            employees_list.append(entry)
+
+            if show_projects and row.get("projects"):
+                for prj in row["projects"]:
+                    projects_list.append({
+                        "EID Сотрудника": current_eid,
+                        "Название": prj.get("name"),
+                        "Роль": prj.get("position"),
+                        "Начало": str(prj.get("start_d")) if prj.get("start_d") else None,
+                        "Конец": str(prj.get("end_d")) if prj.get("end_d") else None,
+                        "Ссылка": prj.get("link")
+                    })
+
+            if show_vacations and row.get("vacations"):
+                for vac in row["vacations"]:
+                    vacations_list.append({
+                        "EID Сотрудника": current_eid,
+                        "Начало": str(vac.get("start_date")),
+                        "Конец": str(vac.get("end_date")),
+                        "Планируемый": "Да" if vac.get("is_planned") else "Нет",
+                        "Замещающий": vac.get("substitute"),
+                        "Комментарий": vac.get("comment"),
+                        "Официальный": "Да" if vac.get("is_official") else "Нет"
+                    })
+
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+            df_emp = pd.DataFrame(employees_list)
+            df_emp.to_excel(writer, index=False, sheet_name="Сотрудники")
+
+            if show_projects:
+                df_prj = pd.DataFrame(projects_list)
+                df_prj.to_excel(writer, index=False, sheet_name="Проекты")
+                
+            if show_vacations:
+                df_vac = pd.DataFrame(vacations_list)
+                df_vac.to_excel(writer, index=False, sheet_name="Отпуска")
+
+            workbook = writer.book
+            header_fmt = workbook.add_format({"bold": True, "bg_color": "#B159B0", "border": 1})
+            
+            for sheet_name in writer.sheets:
+                worksheet = writer.sheets[sheet_name]
+                if sheet_name == "Сотрудники": cur_df = df_emp
+                elif sheet_name == "Проекты": cur_df = df_prj
+                else: cur_df = df_vac
+
+                for col_num, value in enumerate(cur_df.columns.values):
+                    worksheet.write(0, col_num, value, header_fmt)
+                    worksheet.set_column(col_num, col_num, 20)
+
+        output.seek(0)
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": 'attachment; filename="export.xlsx"'}
+        )

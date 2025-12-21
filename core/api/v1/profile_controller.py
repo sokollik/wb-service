@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.schemas.profile_schema import (
     ProfileChangeLogSchema,
+    ProfileExportFilter,
     ProfileSchema,
     ProfileUpdateSchema,
 )
@@ -48,5 +49,12 @@ class ProfileController:
 
     @profile_controller.get("/log")
     @exception_handler
-    async def get_profile_edit_log(self, eid: int) -> List[ProfileChangeLogSchema]:
+    async def get_profile_edit_log(
+        self, eid: int
+    ) -> List[ProfileChangeLogSchema]:
         return await self.profile_service.get_profile_edit_log(eid=eid)
+
+    @profile_controller.get("/export")
+    @exception_handler
+    async def export_profiles(self, config: ProfileExportFilter = Depends()):
+        return await self.profile_service.export_profiles_to_excel(config)

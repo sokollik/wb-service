@@ -17,7 +17,7 @@ class ProfileRepository:
     ):
         self.session = session
 
-    async def get_profile(self, eid: int):
+    async def get_profile(self, eid: int | None = None):
         ManagerORM = alias(EmployeeOrm, name="manager")
         HrORM = alias(EmployeeOrm, name="Hr")
 
@@ -75,57 +75,52 @@ class ProfileRepository:
             .subquery()
         )
 
-        profile = (
-            (
-                await self.session.execute(
-                    select(
-                        EmployeeOrm.eid.label("eid"),
-                        EmployeeOrm.full_name.label("full_name"),
-                        EmployeeOrm.position.label("position"),
-                        EmployeeOrm.birth_date.label("birth_date"),
-                        EmployeeOrm.hire_date.label("hire_date"),
-                        EmployeeOrm.work_phone.label("work_phone"),
-                        EmployeeOrm.work_email.label("work_email"),
-                        EmployeeOrm.work_band.label("work_band"),
-                        OrgUnitOrm.name.label("org_unit"),
-                        ProfileOrm.personal_phone.label("personal_phone"),
-                        ProfileOrm.avatar_id.label("avatar_id"),
-                        ProfileOrm.telegram.label("telegram"),
-                        ProfileOrm.about_me.label("about_me"),
-                        ManagerORM.c.full_name.label("manager_name"),
-                        HrORM.c.full_name.label("hr_name"),
-                        func.coalesce(
-                            projects_subq.c.projects, func.json_build_array()
-                        ).label("projects"),
-                        func.coalesce(
-                            vacations_subq.c.vacations, func.json_build_array()
-                        ).label("vacations"),
-                    )
-                    .where(EmployeeOrm.eid == eid)
-                    .outerjoin(
-                        OrgUnitOrm,
-                        OrgUnitOrm.id == EmployeeOrm.organization_unit,
-                    )
-                    .outerjoin(
-                        ProfileOrm, ProfileOrm.employee_id == EmployeeOrm.eid
-                    )
-                    .outerjoin(
-                        ManagerORM,
-                        ManagerORM.c.eid == OrgUnitOrm.manager_eid,
-                    )
-                    .outerjoin(HrORM, HrORM.c.eid == EmployeeOrm.hrbp_eid)
-                    .outerjoin(
-                        projects_subq,
-                        ProfileOrm.id == projects_subq.c.profile_id,
-                    )
-                    .outerjoin(
-                        vacations_subq,
-                        ProfileOrm.id == vacations_subq.c.profile_id,
-                    )
-                )
+        query = (
+            select(
+                EmployeeOrm.eid.label("eid"),
+                EmployeeOrm.full_name.label("full_name"),
+                EmployeeOrm.position.label("position"),
+                EmployeeOrm.birth_date.label("birth_date"),
+                EmployeeOrm.hire_date.label("hire_date"),
+                EmployeeOrm.work_phone.label("work_phone"),
+                EmployeeOrm.work_email.label("work_email"),
+                EmployeeOrm.work_band.label("work_band"),
+                OrgUnitOrm.name.label("org_unit"),
+                ProfileOrm.personal_phone.label("personal_phone"),
+                ProfileOrm.avatar_id.label("avatar_id"),
+                ProfileOrm.telegram.label("telegram"),
+                ProfileOrm.about_me.label("about_me"),
+                ManagerORM.c.full_name.label("manager_name"),
+                HrORM.c.full_name.label("hr_name"),
+                func.coalesce(
+                    projects_subq.c.projects, func.json_build_array()
+                ).label("projects"),
+                func.coalesce(
+                    vacations_subq.c.vacations, func.json_build_array()
+                ).label("vacations"),
             )
-            .mappings()
-            .one_or_none()
+            .outerjoin(
+                OrgUnitOrm,
+                OrgUnitOrm.id == EmployeeOrm.organization_unit,
+            )
+            .outerjoin(ProfileOrm, ProfileOrm.employee_id == EmployeeOrm.eid)
+            .outerjoin(
+                ManagerORM,
+                ManagerORM.c.eid == OrgUnitOrm.manager_eid,
+            )
+            .outerjoin(HrORM, HrORM.c.eid == EmployeeOrm.hrbp_eid)
+            .outerjoin(
+                projects_subq,
+                ProfileOrm.id == projects_subq.c.profile_id,
+            )
+            .outerjoin(
+                vacations_subq,
+                ProfileOrm.id == vacations_subq.c.profile_id,
+            )
         )
-        print(profile)
+        if eid is not None:
+            query = query.where(EmployeeOrm.eid == eid)
+
+        profile = (await self.session.execute(query)).mappings().all()
+
         return profile

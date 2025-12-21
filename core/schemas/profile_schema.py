@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Any, Dict, List, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class ProjectSchema(BaseModel):
@@ -79,3 +79,13 @@ class ProfileChangeLogSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ProfileExportFilter(BaseModel):
+    fields: str | None = Field(None)
+
+    @field_validator("fields")
+    def split_comma_string(cls, v):
+        if isinstance(v, str):
+            return [item.strip() for item in v.split(",") if item.strip()]
+        return v
