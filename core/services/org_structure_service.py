@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.common.common_exc import (
     NotFoundHttpException,
     WrongParametersHttpException,
+    AlreadyExistsHttpException,
 )
 from core.common.common_repo import CommonRepository
 from core.models.org_structure import OrgUnitOrm
@@ -10,6 +11,9 @@ from core.repositories.org_structure_repo import OrgStructureRepository
 from core.schemas.org_structure_schema import (
     OrgUnitHierarchySchema,
     OrgUnitManagerSchema,
+    OrgUnitCreateSchema,
+    OrgUnitUpdateSchema,
+    OrgUnitBaseSchema,
 )
 
 
@@ -56,13 +60,9 @@ class OrgStructureService:
 
             elif parent_id in units_by_id:
                 units_by_id[parent_id]["children"].append(unit_dict)
-        return [
-            OrgUnitHierarchySchema.model_validate(unit) for unit in root_units
-        ]
+        return [OrgUnitHierarchySchema.model_validate(unit) for unit in root_units]
 
-    async def move_org_unit(
-        self, unit_id: int, new_parent_id: int | None = None
-    ):
+    async def move_org_unit(self, unit_id: int, new_parent_id: int | None = None):
         if unit_id == new_parent_id:
             raise WrongParametersHttpException(params="new_parent_id")
 
@@ -71,9 +71,7 @@ class OrgStructureService:
             raise NotFoundHttpException(name="org_unit")
 
         if new_parent_id is not None:
-            new_parent = await self.org_structure_repo.get_org_units(
-                id=new_parent_id
-            )
+            new_parent = await self.org_structure_repo.get_org_units(id=new_parent_id)
             if not new_parent:
                 raise NotFoundHttpException(name="org_unit")
 
@@ -88,3 +86,67 @@ class OrgStructureService:
             where_stmt=(OrgUnitOrm.id == unit_id),
             values={"parent_id": new_parent_id},
         )
+
+    def _map_row_to_schema(self, row_mapping: dict) -> OrgUnitBaseSchema:
+        unit_dict = dict(row_mapping)
+
+        manager_data = None
+        if unit_dict.get("manager_eid"):
+            manager_data = OrgUnitManagerSchema(
+                eid=unit_dict.pop("manager_eid"),
+                full_name=unit_dict.pop("manager_full_name", ""),
+                position=unit_dict.pop("manager_position", ""),
+            )
+
+        unit_dict.pop("manager_full_name", None)
+        unit_dict.pop("manager_position", None)
+
+        unit_dict["manager"] = manager_data
+        return OrgUnitBaseSchema.model_validate(unit_dict)
+
+    async def create_org_unit(self, data: OrgUnitCreateSchema) -> OrgUnitBaseSchema:
+        org_unit = OrgUnitOrm(**data.model_dump())
+        await self.common.add(org_unit)
+
+        rows = await self.org_structure_repo.get_org_units(id=org_unit.id)
+        return self._map_row_to_schema(rows[0])
+
+    async def get_org_unit(self, unit_id: int) -> OrgUnitBaseSchema:
+        units = await self.org_structure_repo.get_org_units(id=unit_id)
+        if not units:
+            raise NotFoundHttpException(name="org_unit")
+
+        return self._map_row_to_schema(units[0])
+
+    async def update_org_unit(
+        self, unit_id: int, data: OrgUnitUpdateSchema
+    ) -> OrgUnitBaseSchema:
+        org_unit = await self.common.get_one(OrgUnitOrm, OrgUnitOrm.id == unit_id)
+        if not org_unit:
+            raise NotFoundHttpException(name="org_unit")
+
+        update_data = data.model_dump(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(org_unit, key, value)
+
+        await self.common.update(org_unit)
+
+        rows = await self.org_structure_repo.get_org_units(id=unit_id)
+        return self._map_row_to_schema(rows[0])
+
+    async def delete_org_unit(self, unit_id: int):
+        deleted = await self.common.delete(OrgUnitOrm, OrgUnitOrm.id == unit_id)
+        if not deleted:
+            raise NotFoundHttpException(name="org_unit")
+        return {"success": True}
+
+    async def set_manager(self, unit_id: int, manager_eid: int) -> OrgUnitBaseSchema:
+        org_unit = await self.common.get_one(OrgUnitOrm, OrgUnitOrm.id == unit_id)
+        if not org_unit:
+            raise NotFoundHttpException(name="org_unit")
+
+        org_unit.manager_eid = manager_eid
+        await self.common.update(org_unit)
+
+        rows = await self.org_structure_repo.get_org_units(id=unit_id)
+        return self._map_row_to_schema(rows[0])
