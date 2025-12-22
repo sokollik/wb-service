@@ -87,24 +87,7 @@ class OrgStructureService:
             where_stmt=(OrgUnitOrm.id == unit_id),
             values={"parent_id": new_parent_id},
         )
-
-    def _map_row_to_schema(self, row_mapping: dict) -> OrgUnitBaseSchema:
-        unit_dict = dict(row_mapping)
-
-        manager_data = None
-        if unit_dict.get("manager_eid"):
-            manager_data = OrgUnitManagerSchema(
-                eid=unit_dict.pop("manager_eid"),
-                full_name=unit_dict.pop("manager_full_name", ""),
-                position=unit_dict.pop("manager_position", ""),
-            )
-
-        unit_dict.pop("manager_full_name", None)
-        unit_dict.pop("manager_position", None)
-
-        unit_dict["manager"] = manager_data
-        return OrgUnitBaseSchema.model_validate(unit_dict)
-
+        
     async def create_org_unit(self, data: OrgUnitCreateSchema) -> dict:
         org_unit = OrgUnitOrm(**data.model_dump())
         await self.common.add(org_unit)
