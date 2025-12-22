@@ -42,45 +42,34 @@ class OrgStructureController:
             unit_id=unit_id, new_parent_id=new_parent_id
         )
 
-    @org_structure_controller.post(
-        "/units/add",
-        response_model=OrgUnitBaseSchema,
-        summary="Создать подразделение",
-    )
+    @org_structure_controller.post("/units/add", summary="Создать подразделение")
     @exception_handler
     async def create_org_unit(self, data: OrgUnitCreateSchema):
         return await self.org_structure_service.create_org_unit(data)
 
-    @org_structure_controller.get(
-        "/units/get",
-        response_model=OrgUnitBaseSchema,
-        summary="Получить подразделение по ID",
-    )
+    @org_structure_controller.get("/units/get", summary="Получить подразделение по ID")
     @exception_handler
     async def get_org_unit(self, unit_id: int):
         return await self.org_structure_service.get_org_unit(unit_id)
 
     @org_structure_controller.patch(
-        "/units/update",
-        response_model=OrgUnitBaseSchema,
-        summary="Обновить подразделение",
+        "/units/update", summary="Обновить подразделение", status_code=204
     )
     @exception_handler
     async def update_org_unit(self, unit_id: int, data: OrgUnitUpdateSchema):
-        return await self.org_structure_service.update_org_unit(unit_id, data)
+        await self.org_structure_service.update_org_unit(unit_id, data)
+        return
 
     @org_structure_controller.delete(
-        "/units/delete",
-        summary="Удалить подразделение",
+        "/units/delete", summary="Удалить подразделение", status_code=204
     )
     @exception_handler
     async def delete_org_unit(self, unit_id: int):
-        return await self.org_structure_service.delete_org_unit(unit_id)
+        await self.org_structure_service.delete_org_unit(unit_id)
+        return
 
     @org_structure_controller.patch(
-        "/units/set_manager",
-        response_model=OrgUnitBaseSchema,
-        summary="Назначить руководителя подразделения",
+        "/units/set_manager", summary="Назначить руководителя подразделения"
     )
     @exception_handler
     async def set_manager(self, unit_id: int, manager_eid: int):

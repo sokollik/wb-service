@@ -24,6 +24,20 @@ class OrgStructureService:
         self.common = CommonRepository(session=self.session)
         self.org_structure_repo = OrgStructureRepository(session=self.session)
 
+    def _map_manager(self, unit_dict: dict) -> dict:
+        if unit_dict.get("manager_eid") is not None:
+            unit_dict["manager"] = OrgUnitManagerSchema(
+                eid=unit_dict.pop("manager_eid"),
+                full_name=unit_dict.pop("manager_full_name", ""),
+                position=unit_dict.pop("manager_position", ""),
+            )
+        else:
+            unit_dict.pop("manager_eid", None)
+            unit_dict.pop("manager_full_name", None)
+            unit_dict.pop("manager_position", None)
+            unit_dict["manager"] = None
+        return unit_dict
+
     async def get_org_structure_hierarchy(self):
         all_units_mappings = await self.org_structure_repo.get_org_units()
 
@@ -35,20 +49,7 @@ class OrgStructureService:
         for row_mapping in all_units_mappings:
 
             unit_dict = dict(row_mapping)
-
-            manager_data = None
-            if unit_dict["manager_eid"] is not None:
-                manager_data = OrgUnitManagerSchema(
-                    eid=unit_dict["manager_eid"],
-                    full_name=unit_dict["manager_full_name"],
-                    position=unit_dict["manager_position"],
-                ).model_dump()
-
-            del unit_dict["manager_eid"]
-            del unit_dict["manager_full_name"]
-            del unit_dict["manager_position"]
-
-            unit_dict["manager"] = manager_data
+            unit_dict = self._map_manager(unit_dict)
             unit_dict["children"] = []
 
             units_by_id[unit_dict["id"]] = unit_dict
@@ -104,41 +105,37 @@ class OrgStructureService:
         unit_dict["manager"] = manager_data
         return OrgUnitBaseSchema.model_validate(unit_dict)
 
-    async def create_org_unit(self, data: OrgUnitCreateSchema) -> OrgUnitBaseSchema:
+    async def create_org_unit(self, data: OrgUnitCreateSchema) -> dict:
         org_unit = OrgUnitOrm(**data.model_dump())
         await self.common.add(org_unit)
-
-        rows = await self.org_structure_repo.get_org_units(id=org_unit.id)
-        return self._map_row_to_schema(rows[0])
+        return {"id": org_unit.id}
 
     async def get_org_unit(self, unit_id: int) -> OrgUnitBaseSchema:
         units = await self.org_structure_repo.get_org_units(id=unit_id)
         if not units:
             raise NotFoundHttpException(name="org_unit")
+        unit_dict = dict(units[0])
+        unit_dict = self._map_manager(unit_dict)
+        return OrgUnitBaseSchema.model_validate(unit_dict)
 
-        return self._map_row_to_schema(units[0])
-
-    async def update_org_unit(
-        self, unit_id: int, data: OrgUnitUpdateSchema
-    ) -> OrgUnitBaseSchema:
+    async def update_org_unit(self, unit_id: int, data: OrgUnitUpdateSchema) -> None:
         org_unit = await self.common.get_one(OrgUnitOrm, OrgUnitOrm.id == unit_id)
         if not org_unit:
             raise NotFoundHttpException(name="org_unit")
 
         update_data = data.model_dump(exclude_unset=True)
-        for key, value in update_data.items():
-            setattr(org_unit, key, value)
+        if update_data:
+            await self.common.update_stmt(
+                table=OrgUnitOrm,
+                where_stmt=(OrgUnitOrm.id == unit_id),
+                values=update_data,
+            )
 
-        await self.common.update(org_unit)
-
-        rows = await self.org_structure_repo.get_org_units(id=unit_id)
-        return self._map_row_to_schema(rows[0])
-
-    async def delete_org_unit(self, unit_id: int):
+    async def delete_org_unit(self, unit_id: int) -> None:
         deleted = await self.common.delete(OrgUnitOrm, OrgUnitOrm.id == unit_id)
         if not deleted:
             raise NotFoundHttpException(name="org_unit")
-        return {"success": True}
+        return None
 
     async def set_manager(self, unit_id: int, manager_eid: int) -> OrgUnitBaseSchema:
         org_unit = await self.common.get_one(OrgUnitOrm, OrgUnitOrm.id == unit_id)
@@ -149,4 +146,6 @@ class OrgStructureService:
         await self.common.update(org_unit)
 
         rows = await self.org_structure_repo.get_org_units(id=unit_id)
-        return self._map_row_to_schema(rows[0])
+        unit_dict = dict(rows[0])
+        unit_dict = self._map_manager(unit_dict)
+        return OrgUnitBaseSchema.model_validate(unit_dict)
