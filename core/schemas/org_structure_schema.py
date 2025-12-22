@@ -1,7 +1,7 @@
 from datetime import date
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 from core.models.enums import OrgUnitType
 
@@ -12,18 +12,24 @@ class OrgUnitManagerSchema(BaseModel):
     position: str = Field(..., description="Должность руководителя")
     manager_avatar_id: Optional[int] = Field(None)
 
+
 class OrgUnitBaseSchema(BaseModel):
     """Базовая схема для подразделения."""
+
     id: int = Field(..., description="ID подразделения")
     name: str = Field(..., description="Название подразделения")
     unit_type: OrgUnitType = Field(..., description="Тип структурной единицы")
     parent_id: Optional[int] = Field(None, description="ID родительского подразделения")
-    
+
     is_temporary: bool = Field(False, description="Флаг временного подразделения")
     start_date: Optional[date] = Field(None, description="Дата начала (для временных)")
     end_date: Optional[date] = Field(None, description="Дата окончания (для временных)")
-    
-    manager: Optional[OrgUnitManagerSchema] = Field(None, description="Руководитель подразделения")
+
+    manager: Optional[OrgUnitManagerSchema] = Field(
+        None, description="Руководитель подразделения"
+    )
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class OrgUnitHierarchySchema(BaseModel):
@@ -31,12 +37,39 @@ class OrgUnitHierarchySchema(BaseModel):
     name: str = Field(..., description="Название подразделения")
     unit_type: OrgUnitType = Field(..., description="Тип структурной единицы")
     parent_id: Optional[int] = Field(None, description="ID родительского подразделения")
-    
+
     is_temporary: bool = Field(False, description="Флаг временного подразделения")
     start_date: Optional[date] = Field(None, description="Дата начала (для временных)")
     end_date: Optional[date] = Field(None, description="Дата окончания (для временных)")
-    
-    manager: Optional[OrgUnitManagerSchema] = Field(None, description="Руководитель подразделения")
-    children: List["OrgUnitHierarchySchema"] = Field([], description="Список дочерних подразделений")
+
+    manager: Optional[OrgUnitManagerSchema] = Field(
+        None, description="Руководитель подразделения"
+    )
+    children: List["OrgUnitHierarchySchema"] = Field(
+        [], description="Список дочерних подразделений"
+    )
+
 
 OrgUnitHierarchySchema.model_rebuild()
+
+
+class OrgUnitCreateSchema(BaseModel):
+    name: str = Field(..., description="Название подразделения")
+    unit_type: OrgUnitType = Field(..., description="Тип структурной единицы")
+    parent_id: Optional[int] = Field(None, description="ID родительского подразделения")
+    manager_eid: Optional[int] = Field(None, description="EID руководителя")
+    is_temporary: bool = Field(False, description="Флаг временного подразделения")
+    start_date: Optional[date] = Field(None, description="Дата начала (для временных)")
+    end_date: Optional[date] = Field(None, description="Дата окончания (для временных)")
+
+
+class OrgUnitUpdateSchema(BaseModel):
+    name: Optional[str] = Field(None, description="Название подразделения")
+    unit_type: Optional[OrgUnitType] = Field(
+        None, description="Тип структурной единицы"
+    )
+    is_temporary: Optional[bool] = Field(
+        None, description="Флаг временного подразделения"
+    )
+    start_date: Optional[date] = Field(None, description="Дата начала (для временных)")
+    end_date: Optional[date] = Field(None, description="Дата окончания (для временных)")
