@@ -281,3 +281,10 @@ INSERT INTO profile_change_log (profile_id, changed_by_eid, table_name, record_i
 ((SELECT id FROM profile WHERE employee_id = 1), 1, 'profile', (SELECT id FROM profile WHERE employee_id = 1), 'telegram', NULL, '@smirnov_sp', 'CREATE'),
 ((SELECT id FROM profile WHERE employee_id = 1001), 1001, 'profile', (SELECT id FROM profile WHERE employee_id = 1001), 'telegram', NULL, '@ivanov_ii', 'CREATE'),
 ((SELECT id FROM profile WHERE employee_id = 1004), 1004, 'profile', (SELECT id FROM profile WHERE employee_id = 1004), 'about_me', NULL, 'Team Lead фронтенда, ментор', 'UPDATE');
+
+INSERT INTO organization_change_log
+(org_unit_id, changed_by_eid, field_name, old_value, new_value, operation)
+VALUES
+(1, 1001, 'name', 'ИТ-департамент', 'Департамент цифровых технологий', 'UPDATE'),
+(2, 1002, 'manager_eid', NULL, '1002', 'UPDATE'),
+(3, 1003, 'is_temporary', 'false', 'true', 'UPDATE');
