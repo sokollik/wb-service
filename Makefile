@@ -10,10 +10,11 @@ TIME ?= 10m
 ## Запуск/Перезапуск проекта
 start-dev:
 	docker compose -f docker-compose.yaml down -v
-	docker compose -f docker-compose.yaml up --build -d
-	$(SLEEP) 3
-	docker compose -f docker-compose.yaml exec -w /app api python -m alembic upgrade head
-	docker compose -f docker-compose.yaml exec database psql -U postgres -d postgres -f /dumps/main.sql
+	docker compose -f docker-compose.yaml up -d database
+	$(SLEEP) 5
+	docker compose -f docker-compose.yaml run --rm api python -m alembic upgrade head
+	docker compose -f docker-compose.yaml up -d elasticsearch api
+	docker compose -f docker-compose.yaml exec database psql -U postgres -d postgres -f /docker-entrypoint-initdb.d/main.sql || true
 
 ## Обновление базы данных (Применение новых миграций)
 update-db-dev:

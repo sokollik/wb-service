@@ -8,6 +8,9 @@ from core.schemas.org_structure_schema import OrgUnitHierarchySchema
 from core.services.org_structure_service import OrgStructureService
 from core.utils.common_util import exception_handler
 from core.utils.db_util import get_session_obj
+from core.services.elastic_search_service import EmployeeElasticsearchService
+from core.utils.elastic_search_util import get_elasticsearch_service
+
 
 org_structure_controller = APIRouter()
 
@@ -17,9 +20,13 @@ class OrgStructureController:
     def __init__(
         self,
         session: AsyncSession = Depends(get_session_obj),
+        es_service: EmployeeElasticsearchService = Depends(
+            get_elasticsearch_service
+        ),
     ):
         self.session = session
-        self.org_structure_service = OrgStructureService(session=session)
+        self.es_service = es_service
+        self.org_structure_service = OrgStructureService(session=session, es_service=self.es_service)
 
     @org_structure_controller.get(
         "/hierarchy",

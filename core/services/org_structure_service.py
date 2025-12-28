@@ -11,14 +11,20 @@ from core.schemas.org_structure_schema import (
     OrgUnitHierarchySchema,
     OrgUnitManagerSchema,
 )
-
+from core.services.elastic_sync_service import EmployeeSyncService
+from core.services.elastic_search_service import EmployeeElasticsearchService
 
 class OrgStructureService:
 
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, es_service: EmployeeElasticsearchService):
         self.session = session
         self.common = CommonRepository(session=self.session)
         self.org_structure_repo = OrgStructureRepository(session=self.session)
+        self.es_service = es_service
+        self.sync_service = EmployeeSyncService(
+            db_session=self.session,
+            es_service=self.es_service
+        )
 
     async def get_org_structure_hierarchy(self):
         all_units_mappings = await self.org_structure_repo.get_org_units()
@@ -88,3 +94,6 @@ class OrgStructureService:
             where_stmt=(OrgUnitOrm.id == unit_id),
             values={"parent_id": new_parent_id},
         )
+
+        await self.sync_service.sync_all_employees()
+ 

@@ -1,9 +1,9 @@
 from fastapi import APIRouter
 
 from core.api.v1.birthday_controller import birthday_controller
+from core.api.v1.org_structure_controller import org_structure_controller
 from core.api.v1.profile_controller import profile_controller
 from core.api.v1.static_controller import static_router
-from core.api.v1.org_structure_controller import org_structure_controller
 
 v1_router = APIRouter(prefix="/api/v1")
 
