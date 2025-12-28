@@ -32,6 +32,12 @@ class Settings(BaseSettings):
     load_dotenv()
 
     STATIC_PATH: str = os.environ.get("STATIC_PATH")
+    ELASTICSEARCH_HOST: str = os.getenv(
+        "ELASTICSEARCH_HOST", "http://localhost:9200"
+    )
+    ELASTICSEARCH_INDEX_NAME: str = os.getenv(
+        "ELASTICSEARCH_INDEX_NAME", "employee"
+    )
 
 
 def get_settings():
