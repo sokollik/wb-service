@@ -19,6 +19,8 @@ from core.schemas.profile_schema import (
     ProfileExportFilter,
     ProfileUpdateSchema,
 )
+from core.services.elastic_sync_service import EmployeeSyncService
+from core.services.elastic_search_service import EmployeeElasticsearchService
 
 
 class ProfileService:
@@ -26,10 +28,16 @@ class ProfileService:
     def __init__(
         self,
         session: AsyncSession,
+        es_service: EmployeeElasticsearchService
     ):
         self.session = session
         self.common = CommonRepository(session=self.session)
         self.profile_repo = ProfileRepository(session=self.session)
+        self.es_service = es_service
+        self.sync_service = EmployeeSyncService(
+            db_session=self.session,
+            es_service=self.es_service
+        )
 
     async def get_my_profile(self, eid: int):
         profiles = await self.profile_repo.get_profile(eid=eid)
@@ -227,8 +235,8 @@ class ProfileService:
                         operation=ProfileOperationType.CREATE,
                     )
                 )
-
-        await self.session.commit()
+        await self.sync_service.sync_employee(eid=eid)
+        
 
     def _deserialize_log_value(self, value):
         if value is None:
