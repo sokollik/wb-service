@@ -1,5 +1,4 @@
 import os
-
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 
@@ -38,6 +37,13 @@ class Settings(BaseSettings):
     ELASTICSEARCH_INDEX_NAME: str = os.getenv(
         "ELASTICSEARCH_INDEX_NAME", "employee"
     )
+    KEYCLOAK_SERVER_URL: str = os.getenv("KEYCLOAK_SERVER_URL", "http://localhost:8080/auth")
+    KEYCLOAK_REALM: str = os.getenv("KEYCLOAK_REALM", "bank-realm")
+    KEYCLOAK_CLIENT_ID: str = os.getenv("KEYCLOAK_CLIENT_ID", "bank-client")
+    KEYCLOAK_CLIENT_SECRET: str = os.getenv("KEYCLOAK_CLIENT_SECRET", "")
+    KEYCLOAK_PUBLIC_KEY: str = os.getenv("KEYCLOAK_PUBLIC_KEY", "")
+
+    API_KEY_1C: str = os.getenv("API_KEY_1C", "")
 
 
 def get_settings():

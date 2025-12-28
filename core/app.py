@@ -3,7 +3,10 @@ import sys
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi import APIRouter, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from core.middleware import JWTBearer
+from core.common.token_service import TokenService
 
 from core.api.v1.v1 import v1_router
 from core.config.settings import get_settings
@@ -12,6 +15,11 @@ from core.utils.db_util import get_session
 from core.utils.elastic_search_util import (
     get_elasticsearch_service,
 )
+from api.v1.auth import router as auth_router
+from api.v1.integrations.onec import router as onec_router
+
+router = APIRouter(prefix="/auth", tags=["Auth"])
+app.include_router(onec_router)
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -75,3 +83,21 @@ app.add_middleware(
     expose_headers=["*"],
 )
 app.include_router(v1_router)
+
+from fastapi import FastAPI
+from core.middleware import JWTBearer
+
+app = FastAPI()
+
+@app.get("/protected")
+async def protected_route(token: str = Depends(JWTBearer())):
+    user_info = TokenService.get_user_info_from_token(token)
+    return {"message": "Доступ разрешён", "user": user_info}
+
+@router.get("/me")
+async def get_current_user(token: str = Depends(JWTBearer())):
+    user_info = TokenService.get_user_info_from_token(token)
+    return {
+        "status": "success",
+        "user": user_info
+    }
