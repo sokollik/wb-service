@@ -9,6 +9,7 @@ from core.schemas.org_structure_schema import (
     OrgUnitBaseSchema,
     OrgUnitCreateSchema,
     OrgUnitUpdateSchema,
+    OrgChangeLogShema,
 )
 from core.services.org_structure_service import OrgStructureService
 from core.utils.common_util import exception_handler
@@ -44,8 +45,8 @@ class OrgStructureController:
 
     @org_structure_controller.post("/units/add", summary="Создать подразделение")
     @exception_handler
-    async def create_org_unit(self, data: OrgUnitCreateSchema):
-        return await self.org_structure_service.create_org_unit(data)
+    async def create_org_unit(self, data: OrgUnitCreateSchema, changed_by_eid: int):
+        return await self.org_structure_service.create_org_unit(data, changed_by_eid)
 
     @org_structure_controller.get("/units/get", summary="Получить подразделение по ID")
     @exception_handler
@@ -56,21 +57,32 @@ class OrgStructureController:
         "/units/update", summary="Обновить подразделение", status_code=204
     )
     @exception_handler
-    async def update_org_unit(self, unit_id: int, data: OrgUnitUpdateSchema):
-        await self.org_structure_service.update_org_unit(unit_id, data)
+    async def update_org_unit(
+        self, unit_id: int, data: OrgUnitUpdateSchema, changed_by_eid: int
+    ):
+        await self.org_structure_service.update_org_unit(unit_id, data, changed_by_eid)
         return
 
     @org_structure_controller.delete(
         "/units/delete", summary="Удалить подразделение", status_code=204
     )
     @exception_handler
-    async def delete_org_unit(self, unit_id: int):
-        await self.org_structure_service.delete_org_unit(unit_id)
+    async def delete_org_unit(self, unit_id: int, changed_by_eid: int):
+        await self.org_structure_service.delete_org_unit(unit_id, changed_by_eid)
         return
 
     @org_structure_controller.patch(
         "/units/set_manager", summary="Назначить руководителя подразделения"
     )
     @exception_handler
-    async def set_manager(self, unit_id: int, manager_eid: int):
-        return await self.org_structure_service.set_manager(unit_id, manager_eid)
+    async def set_manager(self, unit_id: int, manager_eid: int, changed_by_eid: int):
+        return await self.org_structure_service.set_manager(
+            unit_id, manager_eid, changed_by_eid
+        )
+
+    @org_structure_controller.get(
+        "/units/log", summary="История изменений подразделения"
+    )
+    @exception_handler
+    async def get_org_unit_edit_log(self, unit_id: int) -> list[OrgChangeLogShema]:
+        return await self.org_structure_service.get_org_unit_edit_log(unit_id)
