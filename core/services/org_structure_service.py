@@ -17,14 +17,20 @@ from core.schemas.org_structure_schema import (
     OrgUnitUpdateSchema,
     OrgUnitBaseSchema,
 )
-
+from core.services.elastic_sync_service import EmployeeSyncService
+from core.services.elastic_search_service import EmployeeElasticsearchService
 
 class OrgStructureService:
 
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, es_service: EmployeeElasticsearchService):
         self.session = session
         self.common = CommonRepository(session=self.session)
         self.org_structure_repo = OrgStructureRepository(session=self.session)
+        self.es_service = es_service
+        self.sync_service = EmployeeSyncService(
+            db_session=self.session,
+            es_service=self.es_service
+        )
 
     def _map_manager(self, unit_dict: dict) -> dict:
         if unit_dict.get("manager_eid") is not None:
@@ -89,6 +95,8 @@ class OrgStructureService:
             where_stmt=(OrgUnitOrm.id == unit_id),
             values={"parent_id": new_parent_id},
         )
+        
+        await self.sync_service.sync_all_employees()
 
     async def _log_change(
         self,
@@ -114,11 +122,12 @@ class OrgStructureService:
                 operation=operation,
             )
         )
-
+        
     async def create_org_unit(
         self, data: OrgUnitCreateSchema, changed_by_eid: int
     ) -> dict:
         org_unit = OrgUnitOrm(**data.model_dump())
+        
         await self.common.add(org_unit)
         await self._log_change(
             org_unit_id=org_unit.id,
