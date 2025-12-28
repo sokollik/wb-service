@@ -4,6 +4,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Query, UploadFile
 from fastapi.responses import FileResponse
 from fastapi_restful.cbv import cbv
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from core.common.common_exc import NotAllowedHttpException
 from core.schemas.static_schema import UploadSchema
 from core.services.static_service import StaticService
