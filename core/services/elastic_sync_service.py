@@ -124,7 +124,7 @@ class EmployeeSyncService:
                 return stats["document_count"]
 
         except Exception as e:
-            logger.error(f"Error in sync_if_empty: {e}")
+            logger.error(f"Error in sync if empty: {e}")
             return 0
 
     async def update_employee_on_profile_change(self, employee_id: int):
