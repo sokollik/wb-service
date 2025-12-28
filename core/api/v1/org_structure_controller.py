@@ -5,17 +5,15 @@ from fastapi_restful.cbv import cbv
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.schemas.org_structure_schema import (
-    OrgUnitHierarchySchema,
-    OrgUnitBaseSchema,
     OrgUnitCreateSchema,
+    OrgUnitHierarchySchema,
     OrgUnitUpdateSchema,
 )
+from core.services.elastic_search_service import EmployeeElasticsearchService
 from core.services.org_structure_service import OrgStructureService
 from core.utils.common_util import exception_handler
 from core.utils.db_util import get_session_obj
-from core.services.elastic_search_service import EmployeeElasticsearchService
 from core.utils.elastic_search_util import get_elasticsearch_service
-
 
 org_structure_controller = APIRouter()
 

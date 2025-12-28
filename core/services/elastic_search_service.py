@@ -10,9 +10,7 @@ logger = logging.getLogger(__name__)
 
 class EmployeeElasticsearchService:
 
-    def __init__(
-        self, es_client: Elasticsearch, index_name: str = "employee"
-    ):
+    def __init__(self, es_client: Elasticsearch, index_name: str = "employee"):
         self.es = es_client
         self.index_name = index_name
 
@@ -98,7 +96,11 @@ class EmployeeElasticsearchService:
                             "text": {
                                 "type": "text",
                                 "analyzer": "standard",
-                            }
+                            },
+                            "autocomplete": {
+                                "type": "text",
+                                "analyzer": "autocomplete",
+                            },
                         },
                     },
                     "work_phone": {
@@ -201,12 +203,18 @@ class EmployeeElasticsearchService:
                                 "multi_match": {
                                     "query": query,
                                     "fields": [
+                                        "full_name.autocomplete^4",
                                         "full_name^4",
+                                        "position.autocomplete^2",
                                         "position^2",
+                                        "organization_unit_name.autocomplete^2",
                                         "organization_unit_name^2",
                                         "work_email",
+                                        "work_email.autocomplete",
                                         "work_phone",
+                                        "work_phone.autocomplete",
                                         "work_band",
+                                        "work_band.autocomplete",
                                     ],
                                     "type": "cross_fields",
                                     "operator": "and",
@@ -217,8 +225,17 @@ class EmployeeElasticsearchService:
                                     "query": query,
                                     "fields": [
                                         "full_name^3",
+                                        "full_name.autoccomplete^3",
                                         "position^1.5",
+                                        "position.autocomplete^1.5",
+                                        "organization_unit_name.autocomplete^1.5",
                                         "organization_unit_name^1.5",
+                                        "work_email.text",
+                                        "work_email.autocomplete",
+                                        "work_phone",
+                                        "work_phone.autocomplete",
+                                        "work_band",
+                                        "work_band.autocomplete",
                                     ],
                                     "type": "best_fields",
                                     "fuzziness": "AUTO",
@@ -273,9 +290,7 @@ class EmployeeElasticsearchService:
             logger.error(f"Search error: {e}")
             return {"total": 0, "results": [], "error": str(e)}
 
-    def suggest_employees(
-        self, query: str, size: int = 10
-    ):
+    def suggest_employees(self, query: str, size: int = 10):
         if not query or len(query) < 1:
             return []
 
