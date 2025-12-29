@@ -75,6 +75,7 @@ def upgrade() -> None:
             ["parent_id"],
             ["organization_unit.id"],
             name=op.f("fk_organization_unit_parent_id_organization_unit"),
+            ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_organization_unit")),
     )
@@ -198,9 +199,7 @@ def upgrade() -> None:
             ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_auth_token")),
-        sa.UniqueConstraint(
-            "employee_eid", name=op.f("uq_auth_token_employee_eid")
-        ),
+        sa.UniqueConstraint("employee_eid", name=op.f("uq_auth_token_employee_eid")),
         sa.UniqueConstraint("token", name=op.f("uq_auth_token_token")),
     )
     op.create_table(
@@ -246,9 +245,7 @@ def upgrade() -> None:
             ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_profile")),
-        sa.UniqueConstraint(
-            "employee_id", name=op.f("uq_profile_employee_id")
-        ),
+        sa.UniqueConstraint("employee_id", name=op.f("uq_profile_employee_id")),
     )
     op.create_table(
         "profile_change_log",
@@ -324,9 +321,7 @@ def upgrade() -> None:
     op.create_table(
         "profile_project",
         sa.Column("id", sa.BigInteger(), autoincrement=True, nullable=False),
-        sa.Column(
-            "profile_id", sa.BigInteger(), nullable=False, comment="Профиль"
-        ),
+        sa.Column("profile_id", sa.BigInteger(), nullable=False, comment="Профиль"),
         sa.Column(
             "name",
             sa.String(),
@@ -386,9 +381,7 @@ def upgrade() -> None:
             nullable=False,
             comment="Дата начала отпуска",
         ),
-        sa.Column(
-            "end_date", sa.Date(), nullable=False, comment="Дата конца отпуска"
-        ),
+        sa.Column("end_date", sa.Date(), nullable=False, comment="Дата конца отпуска"),
         sa.Column(
             "substitute_eid",
             sa.BigInteger(),
@@ -420,20 +413,49 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_profile_vacation")),
     )
+    op.create_table(
+        "organization_change_log",
+        sa.Column(
+            "id", sa.BigInteger, primary_key=True, autoincrement=True, nullable=False
+        ),
+        sa.Column(
+            "org_unit_id",
+            sa.BigInteger,
+            sa.ForeignKey("organization_unit.id", ondelete="SET NULL"),
+            nullable=True,
+        ),
+        sa.Column(
+            "changed_by_eid",
+            sa.BigInteger,
+            sa.ForeignKey("employee.eid"),
+            nullable=False,
+        ),
+        sa.Column(
+            "changed_at", sa.DateTime, server_default=sa.text("NOW()"), nullable=False
+        ),
+        sa.Column("field_name", sa.String(255), nullable=False),
+        sa.Column("old_value", sa.Text, nullable=True),
+        sa.Column("new_value", sa.Text, nullable=True),
+        sa.Column("operation", sa.String(32), nullable=False),
+    )
 
     op.create_foreign_key(
-        op.f('fk_employee_organization_unit_organization_unit'),
-        'employee', 'organization_unit',
-        ['organization_unit'], ['id']
-    )
-    
-    op.create_foreign_key(
-        op.f('fk_organization_unit_manager_eid_employee'),
-        'organization_unit', 'employee',
-        ['manager_eid'], ['eid']
+        op.f("fk_employee_organization_unit_organization_unit"),
+        "employee",
+        "organization_unit",
+        ["organization_unit"],
+        ["id"],
     )
 
-        # ### end Alembic commands ###
+    op.create_foreign_key(
+        op.f("fk_organization_unit_manager_eid_employee"),
+        "organization_unit",
+        "employee",
+        ["manager_eid"],
+        ["eid"],
+    )
+
+    # ### end Alembic commands ###
 
 
 def downgrade() -> None:
@@ -446,4 +468,5 @@ def downgrade() -> None:
     op.drop_table("organization_unit")
     op.drop_table("file")
     op.drop_table("employee")
+    op.drop_table("organization_change_log")
     # ### end Alembic commands ###
