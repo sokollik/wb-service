@@ -30,7 +30,7 @@ class OrgUnitOrm(Base):
 
     parent_id = Column(
         BigInteger,
-        ForeignKey("organization_unit.id"),
+        ForeignKey("organization_unit.id", ondelete="CASCADE"),
         nullable=True,
         comment="Родительская структурная единица",
     )

@@ -75,6 +75,7 @@ def upgrade() -> None:
             ["parent_id"],
             ["organization_unit.id"],
             name=op.f("fk_organization_unit_parent_id_organization_unit"),
+            ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_organization_unit")),
     )

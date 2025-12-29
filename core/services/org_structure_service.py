@@ -174,25 +174,58 @@ class OrgStructureService:
             )
 
     async def delete_org_unit(self, unit_id: int, changed_by_eid: int) -> None:
-        org_unit = await self.common.get_one(OrgUnitOrm, OrgUnitOrm.id == unit_id)
+        all_units = await self.org_structure_repo.get_org_units()
+        units_by_id = {u["id"]: u for u in all_units}
+
+        def collect_descendants(current_id):
+            descendants = []
+            for unit in all_units:
+                if unit["parent_id"] == current_id:
+                    descendants.append(unit)
+                    descendants.extend(collect_descendants(unit["id"]))
+            return descendants
+
+        org_unit = units_by_id.get(unit_id)
         if not org_unit:
             raise NotFoundHttpException(name="org_unit")
+
+        descendants = collect_descendants(unit_id)
+        
+        for unit in descendants:
+            await self._log_change(
+                org_unit_id=unit["id"],
+                changed_by_eid=changed_by_eid,
+                field_name="all",
+                old_value={
+                    "name": unit["name"],
+                    "unit_type": str(unit["unit_type"]),
+                    "parent_id": unit["parent_id"],
+                    "manager_eid": unit.get("manager_eid"),
+                    "is_temporary": unit["is_temporary"],
+                    "start_date": str(unit["start_date"]) if unit["start_date"] else None,
+                    "end_date": str(unit["end_date"]) if unit["end_date"] else None,
+                },
+                new_value=None,
+                operation=ProfileOperationType.DELETE,
+            )
+
         await self._log_change(
             org_unit_id=unit_id,
             changed_by_eid=changed_by_eid,
             field_name="all",
             old_value={
-                "name": org_unit.name,
-                "unit_type": str(org_unit.unit_type),
-                "parent_id": org_unit.parent_id,
-                "manager_eid": org_unit.manager_eid,
-                "is_temporary": org_unit.is_temporary,
-                "start_date": str(org_unit.start_date) if org_unit.start_date else None,
-                "end_date": str(org_unit.end_date) if org_unit.end_date else None,
+                "name": org_unit["name"],
+                "unit_type": str(org_unit["unit_type"]),
+                "parent_id": org_unit["parent_id"],
+                "manager_eid": org_unit.get("manager_eid"),
+                "is_temporary": org_unit["is_temporary"],
+                "start_date": str(org_unit["start_date"]) if org_unit["start_date"] else None,
+                "end_date": str(org_unit["end_date"]) if org_unit["end_date"] else None,
             },
             new_value=None,
             operation=ProfileOperationType.DELETE,
         )
+
         deleted = await self.common.delete(OrgUnitOrm, OrgUnitOrm.id == unit_id)
         if not deleted:
             raise NotFoundHttpException(name="org_unit")
