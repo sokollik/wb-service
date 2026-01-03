@@ -1,7 +1,8 @@
-from jose import jwt, JWTError
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any, Dict
+
 from fastapi import HTTPException, status
+from jose import JWTError, jwt
 
 from core.config.settings import get_settings
 

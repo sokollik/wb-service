@@ -2,21 +2,16 @@ import logging
 import sys
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from core.middleware import JWTBearer
-from core.common.token_service import TokenService
 
 from core.api.v1.v1 import v1_router
+from core.common.token_service import TokenService
 from core.config.settings import get_settings
+from core.middleware import JWTBearer
 from core.services.elastic_sync_service import EmployeeSyncService
 from core.utils.db_util import get_session
-from core.utils.elastic_search_util import (
-    get_elasticsearch_service,
-)
-from api.v1.auth import router as auth_router
-from api.v1.integrations.onec import router as onec_router
+from core.utils.elastic_search_util import get_elasticsearch_service
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -85,6 +80,7 @@ app.add_middleware(
 app.include_router(v1_router)
 
 from fastapi import FastAPI
+
 from core.middleware import JWTBearer
 
 app = FastAPI()
