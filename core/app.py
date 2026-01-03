@@ -19,7 +19,7 @@ from api.v1.auth import router as auth_router
 from api.v1.integrations.onec import router as onec_router
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
-app.include_router(onec_router)
+
 
 logging.basicConfig(
     level=logging.DEBUG,
