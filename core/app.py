@@ -79,21 +79,21 @@ app.add_middleware(
 )
 app.include_router(v1_router)
 
-from fastapi import FastAPI
+# from fastapi import FastAPI
 
-from core.middleware import JWTBearer
+# from core.middleware import JWTBearer
 
-app = FastAPI()
+# app = FastAPI()
 
-@app.get("/protected")
-async def protected_route(token: str = Depends(JWTBearer())):
-    user_info = TokenService.get_user_info_from_token(token)
-    return {"message": "Доступ разрешён", "user": user_info}
+# @app.get("/protected")
+# async def protected_route(token: str = Depends(JWTBearer())):
+#     user_info = TokenService.get_user_info_from_token(token)
+#     return {"message": "Доступ разрешён", "user": user_info}
 
-@router.get("/me")
-async def get_current_user(token: str = Depends(JWTBearer())):
-    user_info = TokenService.get_user_info_from_token(token)
-    return {
-        "status": "success",
-        "user": user_info
-    }
+# @router.get("/me")
+# async def get_current_user(token: str = Depends(JWTBearer())):
+#     user_info = TokenService.get_user_info_from_token(token)
+#     return {
+#         "status": "success",
+#         "user": user_info
+#     }
