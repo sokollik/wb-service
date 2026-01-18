@@ -2,13 +2,11 @@ import logging
 import sys
 from contextlib import asynccontextmanager
 
-from fastapi import APIRouter, Depends, FastAPI
+from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from core.api.v1.v1 import v1_router
-from core.common.token_service import TokenService
 from core.config.settings import get_settings
-from core.middleware import JWTBearer
 from core.services.elastic_sync_service import EmployeeSyncService
 from core.utils.db_util import get_session
 from core.utils.elastic_search_util import get_elasticsearch_service

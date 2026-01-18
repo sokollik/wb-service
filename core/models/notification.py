@@ -1,13 +1,7 @@
 import sqlalchemy as sa
-from sqlalchemy import (
-    Boolean,
-    Column,
-    String,
-    func,
-    ForeignKey,
-    DateTime
-)
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import JSONB
+
 from core.models.base import Base
 
 
