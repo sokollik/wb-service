@@ -1,5 +1,5 @@
-from datetime import date
-from typing import List, Optional
+from datetime import date, datetime
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field, ConfigDict
 
@@ -73,3 +73,22 @@ class OrgUnitUpdateSchema(BaseModel):
     )
     start_date: Optional[date] = Field(None, description="Дата начала (для временных)")
     end_date: Optional[date] = Field(None, description="Дата окончания (для временных)")
+
+class OrgChangeLogShema(BaseModel):
+    id: int = Field(...)
+    org_unit_id: int = Field(...)
+    changed_by_eid: int = Field(...)
+    changed_at: datetime = Field(...)
+    field_name: str = Field(...)
+
+    old_value: Union[str, Dict[str, Any], List[Any], bool, int] | None = Field(
+        None
+    )
+    new_value: Union[str, Dict[str, Any], List[Any], bool, int] | None = Field(
+        None
+    )
+
+    operation: Any = Field(...)
+
+    class Config:
+        from_attributes = True

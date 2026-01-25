@@ -1,5 +1,7 @@
 from .auth import *
 from .emploee import *
+from .news import *
+from .notification import *
 from .org_structure import *
 from .profile import *
 from .static import *
