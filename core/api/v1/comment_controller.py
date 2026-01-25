@@ -51,4 +51,20 @@ class CommentController:
     @comment_controller.delete("/")
     @exception_handler
     async def delete_comment(self, comment_id: int, eid: int):
-        pass
+        await self.comment_service.delete_comment(
+            comment_id=comment_id, eid=eid
+        )
+
+    @comment_controller.post("/like/add")
+    @exception_handler
+    async def add_like(self, comment_id: int, eid: int):
+        await self.comment_service.add_like(
+            comment_id=comment_id, eid=eid
+        )
+
+    @comment_controller.delete("/like/remove")
+    @exception_handler
+    async def remove_like(self, comment_id: int, eid: int):
+        await self.comment_service.remove_like(
+            comment_id=comment_id, eid=eid
+        )

@@ -2,6 +2,10 @@ from typing import Literal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.common.common_exc import (
+    NotAllowedHttpException,
+    NotFoundHttpException,
+)
 from core.common.common_repo import CommonRepository
 from core.models.news import CommentOrm, CommentToFileOrm
 from core.repositories.comment_repo import CommentRepository
@@ -67,7 +71,91 @@ class CommentService:
         return new_comment.id
 
     async def edit_comment(self, comment: CommentUpdateSchema):
-        pass
+        existing_comment = await self.common_repo.get_one(
+            from_table=CommentOrm, where_stmt=(CommentOrm.id == comment.id)
+        )
+        if not existing_comment:
+            raise ValueError("Комментарий не найден")
+
+        existing_comment.content = comment.content
+        existing_comment.is_edited = True
+
+        await self.common_repo.delete(
+            from_table=CommentToFileOrm,
+            where_stmt=(CommentToFileOrm.comment_id == comment.id),
+        )
+        await self.common_repo.add_all(
+            [
+                CommentToFileOrm(
+                    comment_id=comment.id,
+                    file_id=file_id,
+                )
+                for file_id in (comment.file_ids or [])
+            ]
+        )
 
     async def delete_comment(self, comment_id: int, eid: int):
-        pass
+        existing_comment = await self.common_repo.get_one(
+            from_table=CommentOrm, where_stmt=(CommentOrm.id == comment_id)
+        )
+        if not existing_comment:
+            raise NotFoundHttpException(name="comment")
+        if (
+            existing_comment.author_id != eid
+        ):  # тут еще проверка на админа должна быть потом
+            raise NotAllowedHttpException(name="delete")
+
+        await self.common_repo.delete(
+            from_table=CommentOrm,
+            where_stmt=(CommentOrm.id == comment_id),
+        )
+
+    async def add_like(self, comment_id: int, eid: int):
+        existing_comment = await self.common_repo.get_one(
+            from_table=CommentOrm, where_stmt=(CommentOrm.id == comment_id)
+        )
+        if not existing_comment:
+            raise NotFoundHttpException(name="comment")
+
+        from core.models.news import CommentLikeOrm
+
+        existing_like = await self.common_repo.get_one(
+            from_table=CommentLikeOrm,
+            where_stmt=(
+                (CommentLikeOrm.comment_id == comment_id),
+                (CommentLikeOrm.user_id == eid)
+            ),
+        )
+        if existing_like:
+            return
+
+        await self.common_repo.add(
+            CommentLikeOrm(comment_id=comment_id, user_id=eid)
+        )
+
+    async def remove_like(self, comment_id: int, eid: int):
+        existing_comment = await self.common_repo.get_one(
+            from_table=CommentOrm, where_stmt=(CommentOrm.id == comment_id)
+        )
+        if not existing_comment:
+            raise NotFoundHttpException(name="comment")
+
+        from core.models.news import CommentLikeOrm
+
+        existing_like = await self.common_repo.get_one(
+            from_table=CommentLikeOrm,
+            where_stmt=(
+                (CommentLikeOrm.comment_id == comment_id),
+                (CommentLikeOrm.user_id == eid)
+            ),
+        )
+        if not existing_like:
+            return
+
+        await self.common_repo.delete(
+            from_table=CommentLikeOrm,
+            where_stmt=(
+                (CommentLikeOrm.comment_id == comment_id),
+                (CommentLikeOrm.user_id == eid)
+            ),
+        )
