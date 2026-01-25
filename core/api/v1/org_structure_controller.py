@@ -5,10 +5,10 @@ from fastapi_restful.cbv import cbv
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.schemas.org_structure_schema import (
+    OrgChangeLogShema,
     OrgUnitCreateSchema,
     OrgUnitHierarchySchema,
     OrgUnitUpdateSchema,
-    OrgChangeLogShema,
 )
 from core.services.elastic_search_service import EmployeeElasticsearchService
 from core.services.org_structure_service import OrgStructureService

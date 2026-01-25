@@ -6,12 +6,14 @@ class ProfileOperationType(Enum):
     UPDATE = "UPDATE"
     DELETE = "DELETE"
 
+
 class OrgUnitType(Enum):
-    DEPARTMENT = 'Department'
-    MANAGEMENT = 'Management'
-    DIVISION = 'Division'
-    GROUP = 'Group'
-    PROJECT_TEAM = 'ProjectTeam'
+    DEPARTMENT = "Department"
+    MANAGEMENT = "Management"
+    DIVISION = "Division"
+    GROUP = "Group"
+    PROJECT_TEAM = "ProjectTeam"
+
 
 class FileType(Enum):
     video = "video"
@@ -19,7 +21,6 @@ class FileType(Enum):
     audio = "audio"
     document = "document"
 
-    from enum import Enum
 
 class NewsCategory(Enum):
     OFFICIAL = "Официальные документы"
@@ -27,6 +28,7 @@ class NewsCategory(Enum):
     IT = "IT-обновления"
     EVENTS = "События"
     TECH = "Технические работы"
+
 
 class NewsStatus(Enum):
     DRAFT = "DRAFT"

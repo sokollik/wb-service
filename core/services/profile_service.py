@@ -19,8 +19,8 @@ from core.schemas.profile_schema import (
     ProfileExportFilter,
     ProfileUpdateSchema,
 )
-from core.services.elastic_sync_service import EmployeeSyncService
 from core.services.elastic_search_service import EmployeeElasticsearchService
+from core.services.elastic_sync_service import EmployeeSyncService
 
 
 class ProfileService:

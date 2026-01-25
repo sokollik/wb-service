@@ -1,13 +1,23 @@
 from fastapi import APIRouter
 
 from core.api.v1.birthday_controller import birthday_controller
+from core.api.v1.comment_controller import comment_controller
 from core.api.v1.org_structure_controller import org_structure_controller
 from core.api.v1.profile_controller import profile_controller
 from core.api.v1.static_controller import static_router
 
 v1_router = APIRouter(prefix="/api/v1")
 
-v1_router.include_router(profile_controller, prefix="/profile")
-v1_router.include_router(birthday_controller, prefix="/birthday")
+v1_router.include_router(
+    profile_controller, prefix="/profile", tags=["Profile"]
+)
+v1_router.include_router(
+    birthday_controller, prefix="/birthday", tags=["Birthday"]
+)
 v1_router.include_router(static_router, prefix="/static")
-v1_router.include_router(org_structure_controller, prefix="/orgstructure")
+v1_router.include_router(
+    org_structure_controller, prefix="/orgstructure", tags=["Org"]
+)
+v1_router.include_router(
+    comment_controller, prefix="/comments", tags=["Comments"]
+)
