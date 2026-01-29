@@ -11,7 +11,7 @@ from sqlalchemy import (
 from sqlalchemy.sql import func
 
 from core.models.base import Base
-from core.models.enums import NewsCategory, NewsStatus
+from core.models.enums import NewsStatus
 
 
 class NewsOrm(Base):
@@ -50,8 +50,8 @@ class NewsToCategoryOrm(Base):
 
 class CategoryOrm(Base):
     __tablename__ = "categories"
-    id = Column(BigInteger, primary_key=True)
-    name = Column(Enum(NewsCategory), nullable=False, index=True)
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False, index=True)
 
 
 class UserFollowedCategoryOrm(Base):

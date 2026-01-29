@@ -22,14 +22,6 @@ class FileType(Enum):
     document = "document"
 
 
-class NewsCategory(Enum):
-    OFFICIAL = "Официальные документы"
-    HR = "HR-новости"
-    IT = "IT-обновления"
-    EVENTS = "События"
-    TECH = "Технические работы"
-
-
 class NewsStatus(Enum):
     DRAFT = "DRAFT"
     PUBLISHED = "PUBLISHED"
