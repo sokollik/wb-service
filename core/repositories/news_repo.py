@@ -1,7 +1,16 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import delete, desc, func, select, update
+from sqlalchemy import (
+    Boolean,
+    case,
+    delete,
+    desc,
+    exists,
+    func,
+    select,
+    update,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.models.emploee import EmployeeOrm
@@ -30,6 +39,8 @@ class NewsRepository:
         sort_by: str = "newest",
         limit: int = 15,
         offset: int = 0,
+        user_eid: Optional[int] = None,
+        likes: Optional[bool] = None,
     ):
         likes_subq = (
             select(
@@ -80,6 +91,23 @@ class NewsRepository:
             .subquery()
         )
 
+        is_liked_expr = (
+            case(
+                (
+                    exists(
+                        select(NewsLikeOrm.user_id).where(
+                            (NewsLikeOrm.news_id == NewsOrm.id)
+                            & (NewsLikeOrm.user_id == user_eid)
+                        )
+                    ),
+                    True,
+                ),
+                else_=False,
+            ).label("is_liked")
+            if user_eid
+            else func.cast(False, Boolean).label("is_liked")
+        )
+
         query = (
             select(
                 NewsOrm.id,
@@ -104,6 +132,7 @@ class NewsRepository:
                 func.coalesce(
                     categories_subq.c.categories, func.json_build_array()
                 ).label("categories"),
+                is_liked_expr,
             )
             .join(EmployeeOrm, EmployeeOrm.eid == NewsOrm.author_id)
             .outerjoin(likes_subq, likes_subq.c.news_id == NewsOrm.id)
@@ -114,6 +143,16 @@ class NewsRepository:
                 categories_subq, categories_subq.c.news_id == NewsOrm.id
             )
         )
+
+        if likes and user_eid:
+            user_likes_subq = (
+                select(NewsLikeOrm.news_id)
+                .where(NewsLikeOrm.user_id == user_eid)
+                .subquery()
+            )
+            query = query.join(
+                user_likes_subq, user_likes_subq.c.news_id == NewsOrm.id
+            )
 
         if category_id:
             query = query.join(
@@ -141,7 +180,9 @@ class NewsRepository:
         result = await self.session.execute(query)
         return result.mappings().all()
 
-    async def get_news_detail(self, news_id: int):
+    async def get_news_detail(
+        self, news_id: int, user_eid: Optional[int] = None
+    ):
         await self.session.execute(
             update(NewsOrm)
             .where(NewsOrm.id == news_id)
@@ -203,6 +244,23 @@ class NewsRepository:
             .scalar_subquery()
         )
 
+        is_liked_expr = (
+            case(
+                (
+                    exists(
+                        select(NewsLikeOrm.user_id).where(
+                            (NewsLikeOrm.news_id == news_id)
+                            & (NewsLikeOrm.user_id == user_eid)
+                        )
+                    ),
+                    True,
+                ),
+                else_=False,
+            ).label("is_liked")
+            if user_eid
+            else func.cast(False, Boolean).label("is_liked")
+        )
+
         query = (
             select(
                 NewsOrm.id,
@@ -226,6 +284,7 @@ class NewsRepository:
                 func.coalesce(categories_agg, func.json_build_array()).label(
                     "categories"
                 ),
+                is_liked_expr,
             )
             .outerjoin(tags_subq, tags_subq.c.news_id == NewsOrm.id)
             .join(EmployeeOrm, EmployeeOrm.eid == NewsOrm.author_id)

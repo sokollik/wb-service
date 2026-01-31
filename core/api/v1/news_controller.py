@@ -36,6 +36,8 @@ class NewsController:
         sort_by: Literal["newest", "popular", "discussed"] = Query("newest"),
         page: int = Query(1),
         size: int = Query(15),
+        user_eid: Optional[int] = Query(None),
+        likes: Optional[bool] = Query(None),
     ):
         return await self.news_service.get_news(
             category_id=category_id,
@@ -44,6 +46,8 @@ class NewsController:
             sort_by=sort_by,
             page=page,
             size=size,
+            user_eid=user_eid,
+            likes=likes,
         )
 
     @news_router.get("/categories", response_model=List[CategorySchema])
@@ -61,8 +65,12 @@ class NewsController:
 
     @news_router.get("/{news_id}", response_model=NewsFullSchema)
     @exception_handler
-    async def get_news_by_id(self, news_id: int):
-        return await self.news_service.get_news_by_id(news_id)
+    async def get_news_by_id(
+        self, news_id: int, user_eid: Optional[int] = Query(None)
+    ):
+        return await self.news_service.get_news_by_id(
+            news_id, user_eid=user_eid
+        )
 
     @news_router.post("/", response_model=int)
     @exception_handler
@@ -91,6 +99,16 @@ class NewsController:
         user_eid: int,
     ):
         return await self.news_service.delete_news(news_id, user_eid)
+
+    @news_router.post("/like/add")
+    @exception_handler
+    async def add_like(self, news_id: int, eid: int):
+        await self.news_service.add_like(news_id=news_id, eid=eid)
+
+    @news_router.delete("/like/remove")
+    @exception_handler
+    async def remove_like(self, news_id: int, eid: int):
+        await self.news_service.remove_like(news_id=news_id, eid=eid)
 
     @news_router.delete("/categories/{category_id}")
     @exception_handler

@@ -7,6 +7,7 @@ from core.common.common_exc import NotFoundHttpException
 from core.common.common_repo import CommonRepository
 from core.models.news import (
     CategoryOrm,
+    NewsLikeOrm,
     NewsOrm,
     NewsTagOrm,
     NewsToCategoryOrm,
@@ -35,6 +36,8 @@ class NewsService:
         sort_by: str = "newest",
         page: int = 1,
         size: int = 15,
+        user_eid: Optional[int] = None,
+        likes: Optional[bool] = None,
     ):
         offset = (page - 1) * size
 
@@ -45,12 +48,16 @@ class NewsService:
             sort_by=sort_by,
             limit=size,
             offset=offset,
+            user_eid=user_eid,
+            likes=likes,
         )
 
         return news_items
 
-    async def get_news_by_id(self, news_id: int):
-        news = await self.news_repo.get_news_detail(news_id)
+    async def get_news_by_id(
+        self, news_id: int, user_eid: Optional[int] = None
+    ):
+        news = await self.news_repo.get_news_detail(news_id, user_eid=user_eid)
         if not news:
             raise NotFoundHttpException(name="news")
         return news
@@ -165,4 +172,48 @@ class NewsService:
     async def delete_category(self, category_id: int):
         await self.common_repo.delete(
             from_table=CategoryOrm, where_stmt=(CategoryOrm.id == category_id)
+        )
+
+    async def add_like(self, news_id: int, eid: int):
+        existing_news = await self.common_repo.get_one(
+            from_table=NewsOrm, where_stmt=(NewsOrm.id == news_id)
+        )
+        if not existing_news:
+            raise NotFoundHttpException(name="news")
+
+        existing_like = await self.common_repo.get_one(
+            from_table=NewsLikeOrm,
+            where_stmt=(
+                (NewsLikeOrm.news_id == news_id),
+                (NewsLikeOrm.user_id == eid),
+            ),
+        )
+        if existing_like:
+            return
+
+        await self.common_repo.add(NewsLikeOrm(news_id=news_id, user_id=eid))
+
+    async def remove_like(self, news_id: int, eid: int):
+        existing_news = await self.common_repo.get_one(
+            from_table=NewsOrm, where_stmt=(NewsOrm.id == news_id)
+        )
+        if not existing_news:
+            raise NotFoundHttpException(name="news")
+
+        existing_like = await self.common_repo.get_one(
+            from_table=NewsLikeOrm,
+            where_stmt=(
+                (NewsLikeOrm.news_id == news_id),
+                (NewsLikeOrm.user_id == eid),
+            ),
+        )
+        if not existing_like:
+            return
+
+        await self.common_repo.delete(
+            from_table=NewsLikeOrm,
+            where_stmt=(
+                (NewsLikeOrm.news_id == news_id),
+                (NewsLikeOrm.user_id == eid),
+            ),
         )

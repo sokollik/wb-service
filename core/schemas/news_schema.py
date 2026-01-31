@@ -29,6 +29,7 @@ class NewsListResponseSchema(BaseModel):
     views_count: int
     likes_count: int = 0
     comments_count: int = 0
+    is_liked: bool = False
 
     class Config:
         from_attributes = True
@@ -47,6 +48,7 @@ class NewsFullSchema(BaseModel):
     views_count: int
     likes_count: int = 0
     comments_count: int = 0
+    is_liked: bool = False
 
     content: str
     mandatory_ack: bool
