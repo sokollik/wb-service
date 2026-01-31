@@ -1,4 +1,5 @@
 import os
+
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 
@@ -23,7 +24,7 @@ class DatabaseSettings:
     def async_url(self) -> str:
         return (
             f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:"
-            f"{self.DB_PORT}/{self.DB_NAME}?async_fallback=True"
+            f"{self.DB_PORT}/{self.DB_NAME}"
         )
 
 
@@ -37,7 +38,9 @@ class Settings(BaseSettings):
     ELASTICSEARCH_INDEX_NAME: str = os.getenv(
         "ELASTICSEARCH_INDEX_NAME", "employee"
     )
-    KEYCLOAK_SERVER_URL: str = os.getenv("KEYCLOAK_SERVER_URL", "http://localhost:8080/auth")
+    KEYCLOAK_SERVER_URL: str = os.getenv(
+        "KEYCLOAK_SERVER_URL", "http://localhost:8080/auth"
+    )
     KEYCLOAK_REALM: str = os.getenv("KEYCLOAK_REALM", "bank-realm")
     KEYCLOAK_CLIENT_ID: str = os.getenv("KEYCLOAK_CLIENT_ID", "bank-client")
     KEYCLOAK_CLIENT_SECRET: str = os.getenv("KEYCLOAK_CLIENT_SECRET", "")
