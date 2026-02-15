@@ -1,5 +1,7 @@
-from fastapi import HTTPException, status, Header, Depends
+from fastapi import Header, HTTPException, status
+
 from core.config.settings import get_settings
+
 
 def verify_api_key(x_api_key: str = Header(..., alias="X-API-Key")):
     settings = get_settings()
@@ -8,6 +10,6 @@ def verify_api_key(x_api_key: str = Header(..., alias="X-API-Key")):
     if x_api_key != settings.API_KEY_1C:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or missing X-API-Key"
+            detail="Invalid or missing X-API-Key",
         )
     return True

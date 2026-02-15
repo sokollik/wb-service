@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse
 from fastapi_restful.cbv import cbv
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.api.deps import CurrentUser, require_roles
 from core.common.common_exc import NotAllowedHttpException
 from core.schemas.static_schema import UploadSchema
 from core.services.static_service import StaticService
@@ -42,10 +43,9 @@ class StaticController:
     @exception_handler
     async def static_upload(
         self,
-        eid: int,
         file: UploadFile,
         data: UploadSchema = Depends(),
-        
+        current_user: CurrentUser = Depends(require_roles(["employee"])),
     ) -> int:
         """
         info:
@@ -58,24 +58,13 @@ class StaticController:
         - video: mp4
         - audio: mp3, mpeg
         """
-
-        # if data.created_for:
-        #     if _.role.name not in ["admin", "expert"]:
-        #         raise NotAllowedHttpException(lang=self.lang)
-
-        #     created_for = data.created_for
-
-        # else:
-        #     created_for = _.id
-
         file_ext = await self.static_service.validate(
             file=file,
             type=data.type,
         )
 
         return await self.static_service.upload(
-            created_by=eid,
-            # created_for=created_for,
+            created_by=current_user.eid,
             type=data.type,
             name=data.name,
             file=file,
@@ -90,17 +79,13 @@ class StaticController:
     async def static_get(
         self,
         id: int,
-        # _: UserSchema = Depends(token_service.login_required),
+        _current_user: CurrentUser = Depends(require_roles(["employee"])),
     ) -> FileResponse:
         """
         info:
         - route for getting static files
         """
-
-        return await self.static_service.get(
-            id=id,
-            # client=_,
-        )
+        return await self.static_service.get(id=id)
 
     @static_router.delete(
         "/delete",
@@ -110,16 +95,15 @@ class StaticController:
     async def static_delete(
         self,
         id: int,
-        eid: int,
+        current_user: CurrentUser = Depends(require_roles(["employee"])),
     ):
         """
         info:
         - route for deleting static files
         """
-
         if not await self.static_service.can_delete(
             id=id,
-            client_id=eid,
+            client_id=current_user.eid,
         ):
             raise NotAllowedHttpException(lang=self.lang)
 

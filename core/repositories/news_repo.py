@@ -39,7 +39,7 @@ class NewsRepository:
         sort_by: str = "newest",
         limit: int = 15,
         offset: int = 0,
-        user_eid: Optional[int] = None,
+        user_eid: Optional[str] = None,
         likes: Optional[bool] = None,
     ):
         likes_subq = (
@@ -181,7 +181,7 @@ class NewsRepository:
         return result.mappings().all()
 
     async def get_news_detail(
-        self, news_id: int, user_eid: Optional[int] = None
+        self, news_id: int, user_eid: Optional[str] = None
     ):
         await self.session.execute(
             update(NewsOrm)

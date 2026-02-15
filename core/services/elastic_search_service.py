@@ -357,7 +357,7 @@ class EmployeeElasticsearchService:
             "score": round(hit.get("_score", 0), 2),
         }
 
-    def delete_employee(self, eid: int):
+    def delete_employee(self, eid: str):
         try:
             self.es.delete(index=self.index_name, id=str(eid))
         except Exception as e:

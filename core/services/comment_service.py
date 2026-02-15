@@ -94,7 +94,7 @@ class CommentService:
             ]
         )
 
-    async def delete_comment(self, comment_id: int, eid: int):
+    async def delete_comment(self, comment_id: int, eid: str):
         existing_comment = await self.common_repo.get_one(
             from_table=CommentOrm, where_stmt=(CommentOrm.id == comment_id)
         )
@@ -110,7 +110,7 @@ class CommentService:
             where_stmt=(CommentOrm.id == comment_id),
         )
 
-    async def add_like(self, comment_id: int, eid: int):
+    async def add_like(self, comment_id: int, eid: str):
         existing_comment = await self.common_repo.get_one(
             from_table=CommentOrm, where_stmt=(CommentOrm.id == comment_id)
         )
@@ -133,7 +133,7 @@ class CommentService:
             CommentLikeOrm(comment_id=comment_id, user_id=eid)
         )
 
-    async def remove_like(self, comment_id: int, eid: int):
+    async def remove_like(self, comment_id: int, eid: str):
         existing_comment = await self.common_repo.get_one(
             from_table=CommentOrm, where_stmt=(CommentOrm.id == comment_id)
         )

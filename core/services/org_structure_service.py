@@ -101,7 +101,7 @@ class OrgStructureService:
     async def _log_change(
         self,
         org_unit_id: int,
-        changed_by_eid: int,
+        changed_by_eid: str,
         field_name: str,
         old_value,
         new_value,
@@ -124,7 +124,7 @@ class OrgStructureService:
         )
         
     async def create_org_unit(
-        self, data: OrgUnitCreateSchema, changed_by_eid: int
+        self, data: OrgUnitCreateSchema, changed_by_eid: str
     ) -> dict:
         org_unit = OrgUnitOrm(**data.model_dump())
         
@@ -148,7 +148,7 @@ class OrgStructureService:
         return OrgUnitBaseSchema.model_validate(unit_dict)
 
     async def update_org_unit(
-        self, unit_id: int, data: OrgUnitUpdateSchema, changed_by_eid: int
+        self, unit_id: int, data: OrgUnitUpdateSchema, changed_by_eid: str
     ) -> None:
         org_unit = await self.common.get_one(OrgUnitOrm, OrgUnitOrm.id == unit_id)
         if not org_unit:
@@ -173,7 +173,7 @@ class OrgStructureService:
                 values=update_data,
             )
 
-    async def delete_org_unit(self, unit_id: int, changed_by_eid: int) -> None:
+    async def delete_org_unit(self, unit_id: int, changed_by_eid: str) -> None:
         org_unit = await self.common.get_one(OrgUnitOrm, OrgUnitOrm.id == unit_id)
         if not org_unit:
             raise NotFoundHttpException(name="org_unit")
@@ -228,7 +228,7 @@ class OrgStructureService:
         return processed_logs
 
     async def set_manager(
-        self, unit_id: int, manager_eid: int, changed_by_eid: int
+        self, unit_id: int, manager_eid: str, changed_by_eid: str
     ) -> OrgUnitBaseSchema:
         org_unit = await self.common.get_one(OrgUnitOrm, OrgUnitOrm.id == unit_id)
         if not org_unit:

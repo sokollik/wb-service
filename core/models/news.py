@@ -23,7 +23,7 @@ class NewsOrm(Base):
     content = Column(Text, nullable=False)
 
     author_id = Column(
-        BigInteger, ForeignKey("employee.eid"), nullable=False, index=True
+        String, ForeignKey("employee.eid"), nullable=False, index=True
     )
 
     is_pinned = Column(Boolean, default=False, index=True)
@@ -56,7 +56,7 @@ class CategoryOrm(Base):
 
 class UserFollowedCategoryOrm(Base):
     __tablename__ = "user_followed_categories"
-    user_eid = Column(BigInteger, ForeignKey("employee.eid"), primary_key=True)
+    user_eid = Column(String, ForeignKey("employee.eid"), primary_key=True)
     category_id = Column(
         BigInteger,
         ForeignKey("categories.id", ondelete="CASCADE"),
@@ -107,7 +107,7 @@ class CommentOrm(Base):
         nullable=False,
         index=True,
     )
-    author_id = Column(BigInteger, ForeignKey("employee.eid"), nullable=False)
+    author_id = Column(String, ForeignKey("employee.eid"), nullable=False)
     parent_id = Column(
         BigInteger,
         ForeignKey("comments.id", ondelete="CASCADE"),
@@ -139,7 +139,7 @@ class CommentToFileOrm(Base):
 
 class NewsLikeOrm(Base):
     __tablename__ = "news_likes"
-    user_id = Column(BigInteger, ForeignKey("employee.eid"), primary_key=True)
+    user_id = Column(String, ForeignKey("employee.eid"), primary_key=True)
     news_id = Column(
         BigInteger, ForeignKey("news.id", ondelete="CASCADE"), primary_key=True
     )
@@ -147,7 +147,7 @@ class NewsLikeOrm(Base):
 
 class CommentLikeOrm(Base):
     __tablename__ = "comments_likes"
-    user_id = Column(BigInteger, ForeignKey("employee.eid"), primary_key=True)
+    user_id = Column(String, ForeignKey("employee.eid"), primary_key=True)
     comment_id = Column(
         BigInteger,
         ForeignKey("comments.id", ondelete="CASCADE"),
@@ -164,5 +164,5 @@ class MentionOrm(Base):
         nullable=False,
     )
     mentioned_user_id = Column(
-        BigInteger, ForeignKey("employee.eid"), nullable=False
+        String, ForeignKey("employee.eid"), nullable=False
     )

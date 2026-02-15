@@ -17,7 +17,7 @@ class ProfileRepository:
     ):
         self.session = session
 
-    async def get_profile(self, eid: int | None = None):
+    async def get_profile(self, eid: str | None = None):
         ManagerORM = alias(EmployeeOrm, name="manager")
         HrORM = alias(EmployeeOrm, name="Hr")
 

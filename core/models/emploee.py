@@ -7,11 +7,10 @@ class EmployeeOrm(Base):
     __tablename__ = "employee"
 
     eid = Column(
-        BigInteger,
+        String,
         primary_key=True,
-        autoincrement=True,
         nullable=False,
-        comment="EID/ID (read-only HR)",
+        comment="EID/ID (Keycloak user ID)",
     )
 
     full_name = Column(String, nullable=False, comment="ФИО (read-only HR)")
@@ -46,7 +45,7 @@ class EmployeeOrm(Base):
 
     work_band = Column(String, comment="Band (read-only HR)")
     hrbp_eid = Column(
-        BigInteger,
+        String,
         ForeignKey("employee.eid"),
         nullable=True,
         comment="HR-бизнес-партнёр (read-only HR)",

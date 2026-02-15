@@ -36,7 +36,7 @@ class NewsService:
         sort_by: str = "newest",
         page: int = 1,
         size: int = 15,
-        user_eid: Optional[int] = None,
+        user_eid: Optional[str] = None,
         likes: Optional[bool] = None,
     ):
         offset = (page - 1) * size
@@ -55,7 +55,7 @@ class NewsService:
         return news_items
 
     async def get_news_by_id(
-        self, news_id: int, user_eid: Optional[int] = None
+        self, news_id: int, user_eid: Optional[str] = None
     ):
         news = await self.news_repo.get_news_detail(news_id, user_eid=user_eid)
         if not news:
@@ -101,7 +101,7 @@ class NewsService:
         return new_news.id
 
     async def update_news(
-        self, news_id: int, user_eid: int, data: NewsUpdateSchema
+        self, news_id: int, user_eid: str, data: NewsUpdateSchema
     ):
 
         news = await self.common_repo.get_one(NewsOrm, (NewsOrm.id == news_id))
@@ -155,7 +155,7 @@ class NewsService:
             if file_links:
                 await self.common_repo.add_all(file_links)
 
-    async def delete_news(self, news_id: int, user_eid: int):
+    async def delete_news(self, news_id: int, user_eid: str):
         await self.common_repo.delete(
             from_table=NewsOrm, where_stmt=(NewsOrm.id == news_id)
         )
@@ -174,7 +174,7 @@ class NewsService:
             from_table=CategoryOrm, where_stmt=(CategoryOrm.id == category_id)
         )
 
-    async def add_like(self, news_id: int, eid: int):
+    async def add_like(self, news_id: int, eid: str):
         existing_news = await self.common_repo.get_one(
             from_table=NewsOrm, where_stmt=(NewsOrm.id == news_id)
         )
@@ -193,7 +193,7 @@ class NewsService:
 
         await self.common_repo.add(NewsLikeOrm(news_id=news_id, user_id=eid))
 
-    async def remove_like(self, news_id: int, eid: int):
+    async def remove_like(self, news_id: int, eid: str):
         existing_news = await self.common_repo.get_one(
             from_table=NewsOrm, where_stmt=(NewsOrm.id == news_id)
         )

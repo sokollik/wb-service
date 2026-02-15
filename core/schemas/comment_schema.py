@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 
 class AuthorSchema(BaseModel):
-    eid: int = Field(...)
+    eid: str = Field(...)
     full_name: str = Field(...)
 
 
@@ -33,7 +33,7 @@ class CommentViewSchema(BaseModel):
 
 
 class CommentCreateSchema(BaseModel):
-    author_id: int = Field(..., description="EID автора комментария")
+    author_id: str = Field(..., description="EID автора комментария")
     news_id: int = Field(..., description="ID новости")
     parent_id: int | None = Field(
         None, description="ID родительского комментария"
