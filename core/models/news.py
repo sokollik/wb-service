@@ -11,7 +11,7 @@ from sqlalchemy import (
 from sqlalchemy.sql import func
 
 from core.models.base import Base
-from core.models.enums import NewsStatus
+from core.models.enums import NewsStatus, ProfileOperationType
 
 
 class NewsOrm(Base):
@@ -22,9 +22,7 @@ class NewsOrm(Base):
     short_description = Column(String, nullable=False)
     content = Column(Text, nullable=False)
 
-    author_id = Column(
-        String, ForeignKey("employee.eid"), nullable=False, index=True
-    )
+    author_id = Column(String, ForeignKey("employee.eid"), nullable=False, index=True)
 
     is_pinned = Column(Boolean, default=False, index=True)
     mandatory_ack = Column(Boolean, default=False)
@@ -163,6 +161,113 @@ class MentionOrm(Base):
         ForeignKey("comments.id", ondelete="CASCADE"),
         nullable=False,
     )
-    mentioned_user_id = Column(
-        String, ForeignKey("employee.eid"), nullable=False
+    mentioned_user_id = Column(String, ForeignKey("employee.eid"), nullable=False)
+
+
+class NewsChangeLogOrm(Base):
+    __tablename__ = "news_change_log"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True, nullable=False)
+
+    news_id = Column(
+        BigInteger,
+        ForeignKey("news.id", ondelete="CASCADE"),
+        nullable=False,
+        comment="ID новости, которая была изменена",
+    )
+
+    changed_by_eid = Column(
+        String,
+        ForeignKey("employee.eid"),
+        nullable=False,
+        comment="EID сотрудника, который внес изменение",
+    )
+
+    changed_at = Column(
+        DateTime,
+        nullable=False,
+        server_default=func.now(),
+        comment="Дата и время изменения",
+    )
+
+    field_name = Column(
+        String,
+        nullable=False,
+        comment="Название измененного поля",
+    )
+
+    old_value = Column(
+        String,
+        nullable=True,
+        comment="Старое значение (JSON или строка)",
+    )
+
+    new_value = Column(
+        String,
+        nullable=True,
+        comment="Новое значение (JSON или строка)",
+    )
+
+    operation = Column(
+        Enum(ProfileOperationType),
+        nullable=False,
+        comment="Тип операции (CREATE, UPDATE, DELETE)",
+    )
+
+
+class CommentChangeLogOrm(Base):
+    __tablename__ = "comment_change_log"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True, nullable=False)
+
+    comment_id = Column(
+        BigInteger,
+        ForeignKey("comments.id", ondelete="CASCADE"),
+        nullable=False,
+        comment="ID комментария, который был изменен",
+    )
+
+    news_id = Column(
+        BigInteger,
+        ForeignKey("news.id", ondelete="CASCADE"),
+        nullable=False,
+        comment="ID новости, к которой относится комментарий",
+    )
+
+    changed_by_eid = Column(
+        String,
+        ForeignKey("employee.eid"),
+        nullable=False,
+        comment="EID сотрудника, который внес изменение",
+    )
+
+    changed_at = Column(
+        DateTime,
+        nullable=False,
+        server_default=func.now(),
+        comment="Дата и время изменения",
+    )
+
+    field_name = Column(
+        String,
+        nullable=False,
+        comment="Название измененного поля",
+    )
+
+    old_value = Column(
+        String,
+        nullable=True,
+        comment="Старое значение (JSON или строка)",
+    )
+
+    new_value = Column(
+        String,
+        nullable=True,
+        comment="Новое значение (JSON или строка)",
+    )
+
+    operation = Column(
+        Enum(ProfileOperationType),
+        nullable=False,
+        comment="Тип операции (CREATE, UPDATE, DELETE)",
     )

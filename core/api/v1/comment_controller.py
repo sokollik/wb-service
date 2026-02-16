@@ -35,9 +35,7 @@ class CommentController:
         sort_by: Literal["popular", "new"] = "new",
         _current_user: CurrentUser = Depends(require_roles(["employee"])),
     ) -> CommentViewSchema:
-        return await self.comment_service.get_comments(
-            news_id=news_id, sort_by=sort_by
-        )
+        return await self.comment_service.get_comments(news_id=news_id, sort_by=sort_by)
 
     @comment_controller.post("/")
     @exception_handler
@@ -46,9 +44,7 @@ class CommentController:
         comment: CommentCreateSchema,
         _current_user: CurrentUser = Depends(require_roles(["employee"])),
     ) -> int:
-        new_comment_id = await self.comment_service.create_comment(
-            comment=comment
-        )
+        new_comment_id = await self.comment_service.create_comment(comment=comment)
         return new_comment_id
 
     @comment_controller.put("/")
@@ -78,9 +74,7 @@ class CommentController:
         comment_id: int,
         current_user: CurrentUser = Depends(require_roles(["employee"])),
     ):
-        await self.comment_service.add_like(
-            comment_id=comment_id, eid=current_user.eid
-        )
+        await self.comment_service.add_like(comment_id=comment_id, eid=current_user.eid)
 
     @comment_controller.delete("/like/remove")
     @exception_handler
@@ -92,3 +86,12 @@ class CommentController:
         await self.comment_service.remove_like(
             comment_id=comment_id, eid=current_user.eid
         )
+
+    @comment_controller.get("/{comment_id}/log")
+    @exception_handler
+    async def get_comment_edit_log(
+        self,
+        comment_id: int,
+        current_user: CurrentUser = Depends(require_roles(["admin"])),
+    ):
+        return await self.comment_service.get_comment_edit_log(comment_id=comment_id)

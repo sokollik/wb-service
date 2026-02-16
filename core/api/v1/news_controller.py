@@ -84,9 +84,7 @@ class NewsController:
     async def create_news(
         self,
         data: NewsCreateSchema,
-        current_user: CurrentUser = Depends(
-            require_roles(["news_editor", "admin"])
-        ),
+        current_user: CurrentUser = Depends(require_roles(["news_editor", "admin"])),
     ):
         return await self.news_service.create_news(
             author_id=current_user.eid, data=data
@@ -98,9 +96,7 @@ class NewsController:
         self,
         news_id: int,
         data: NewsUpdateSchema,
-        current_user: CurrentUser = Depends(
-            require_roles(["news_editor", "admin"])
-        ),
+        current_user: CurrentUser = Depends(require_roles(["news_editor", "admin"])),
     ):
         return await self.news_service.update_news(
             news_id=news_id, user_eid=current_user.eid, data=data
@@ -111,9 +107,7 @@ class NewsController:
     async def delete_news(
         self,
         news_id: int,
-        current_user: CurrentUser = Depends(
-            require_roles(["news_editor", "admin"])
-        ),
+        current_user: CurrentUser = Depends(require_roles(["news_editor", "admin"])),
     ):
         return await self.news_service.delete_news(news_id, current_user.eid)
 
@@ -133,9 +127,7 @@ class NewsController:
         news_id: int,
         current_user: CurrentUser = Depends(require_roles(["employee"])),
     ):
-        await self.news_service.remove_like(
-            news_id=news_id, eid=current_user.eid
-        )
+        await self.news_service.remove_like(news_id=news_id, eid=current_user.eid)
 
     @news_router.delete("/categories/{category_id}")
     @exception_handler
@@ -145,3 +137,12 @@ class NewsController:
         current_user: CurrentUser = Depends(require_roles(["admin"])),
     ):
         await self.news_service.delete_category(category_id)
+
+    @news_router.get("/{news_id}/log")
+    @exception_handler
+    async def get_news_edit_log(
+        self,
+        news_id: int,
+        current_user: CurrentUser = Depends(require_roles(["admin"])),
+    ):
+        return await self.news_service.get_news_edit_log(news_id=news_id)
