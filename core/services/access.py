@@ -7,11 +7,11 @@ from core.models.profile import ProfileOrm
 
 class AccessService:
 
-    def __init__(self, session: Session, current_user_eid: int):
+    def __init__(self, session: Session, current_user_eid: str):
         self.session = session
         self.current_user_eid = current_user_eid
 
-    def can_view_personal_phone(self, target_employee_eid: int) -> bool:
+    def can_view_personal_phone(self, target_employee_eid: str) -> bool:
         same_department = exists().where(
             and_(
                 EmployeeOrm.eid == self.current_user_eid,

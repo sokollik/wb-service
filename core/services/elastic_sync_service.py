@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime
-from typing import Any, Dict
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -64,7 +63,7 @@ class EmployeeSyncService:
             "indexed_at": datetime.now().isoformat(),
         }
 
-    async def sync_employee(self, eid: int):
+    async def sync_employee(self, eid: str):
         try:
             emp_result = await self.db.execute(
                 select(EmployeeOrm).where(EmployeeOrm.eid == eid)

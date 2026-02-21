@@ -1,7 +1,7 @@
 from datetime import date, datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Union
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, field_validator
 
 
 class ProjectSchema(BaseModel):
@@ -30,7 +30,7 @@ class VacationSchema(BaseModel):
 
 
 class ProfileSchema(BaseModel):
-    eid: int
+    eid: str
     full_name: str
     avatar_id: int | None = None
     position: str
@@ -71,7 +71,7 @@ class ProfileUpdateSchema(BaseModel):
 class ProfileChangeLogSchema(BaseModel):
     id: int
     profile_id: int
-    changed_by_eid: int
+    changed_by_eid: str
     changed_at: datetime
     table_name: str
     record_id: int | None = None
@@ -97,7 +97,7 @@ class ProfileExportFilter(BaseModel):
 
 class EmployeeSuggestion(BaseModel):
     """Предложение для автодополнения"""
-    eid: int
+    eid: str
     full_name: str
     position: str
     department: str
@@ -105,7 +105,7 @@ class EmployeeSuggestion(BaseModel):
 
 class EmployeeSearchResult(BaseModel):
     """Результат поиска сотрудника"""
-    eid: int
+    eid: str
     full_name: str
     position: str
     work_email: str | None = None

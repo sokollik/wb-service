@@ -141,7 +141,7 @@ class StaticService:
 
     async def upload(
         self,
-        created_by: int,
+        created_by: str,
         # created_for: int | None,
         type: FileType,
         name: str | None,
@@ -226,7 +226,7 @@ class StaticService:
     async def can_delete(
         self,
         id: int,
-        client_id: int,
+        client_id: str,
     ) -> bool:
         file_orm = await self.static_repo.get(id=id)
 

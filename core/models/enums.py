@@ -6,15 +6,23 @@ class ProfileOperationType(Enum):
     UPDATE = "UPDATE"
     DELETE = "DELETE"
 
+
 class OrgUnitType(Enum):
-    DEPARTMENT = 'Department'
-    MANAGEMENT = 'Management'
-    DIVISION = 'Division'
-    GROUP = 'Group'
-    PROJECT_TEAM = 'ProjectTeam'
+    DEPARTMENT = "Department"
+    MANAGEMENT = "Management"
+    DIVISION = "Division"
+    GROUP = "Group"
+    PROJECT_TEAM = "ProjectTeam"
+
 
 class FileType(Enum):
     video = "video"
     image = "image"
     audio = "audio"
     document = "document"
+
+
+class NewsStatus(Enum):
+    DRAFT = "DRAFT"
+    PUBLISHED = "PUBLISHED"
+    ARCHIVED = "ARCHIVED"

@@ -19,8 +19,8 @@ from core.schemas.profile_schema import (
     ProfileExportFilter,
     ProfileUpdateSchema,
 )
-from core.services.elastic_sync_service import EmployeeSyncService
 from core.services.elastic_search_service import EmployeeElasticsearchService
+from core.services.elastic_sync_service import EmployeeSyncService
 
 
 class ProfileService:
@@ -39,7 +39,7 @@ class ProfileService:
             es_service=self.es_service
         )
 
-    async def get_my_profile(self, eid: int):
+    async def get_my_profile(self, eid: str):
         profiles = await self.profile_repo.get_profile(eid=eid)
         if not profiles:
             raise NotFoundHttpException(name="profile")
@@ -54,7 +54,7 @@ class ProfileService:
 
     async def update_profile(
         self,
-        eid: int,
+        eid: str,
         profile_data: ProfileUpdateSchema,
     ):
         profile = await self.common.get_one(
@@ -248,7 +248,7 @@ class ProfileService:
         except (json.JSONDecodeError, TypeError):
             return value
 
-    async def get_profile_edit_log(self, eid: int):
+    async def get_profile_edit_log(self, eid: str):
         profile = await self.common.get_one(
             ProfileOrm, where_stmt=ProfileOrm.employee_id == eid
         )

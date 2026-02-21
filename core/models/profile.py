@@ -1,6 +1,5 @@
 import sqlalchemy as sa
 from sqlalchemy import (
-    BigInteger,
     Boolean,
     Column,
     Date,
@@ -23,7 +22,7 @@ class ProfileOrm(Base):
     )
 
     employee_id = Column(
-        sa.BigInteger,
+        sa.String,
         ForeignKey("employee.eid", ondelete="CASCADE"),
         unique=True,
         nullable=False,
@@ -102,7 +101,7 @@ class ProfileVacationOrm(Base):
     end_date = Column(Date, nullable=False, comment="Дата конца отпуска")
 
     substitute_eid = Column(
-        BigInteger,
+        String,
         ForeignKey("employee.eid"),
         nullable=True,
         comment="Замещающий сотрудник",
@@ -133,7 +132,7 @@ class ProfileChangeLogOrm(Base):
     )
 
     changed_by_eid = Column(
-        sa.BigInteger,
+        sa.String,
         ForeignKey("employee.eid"),
         nullable=False,
         comment="EID сотрудника, который внес изменение",

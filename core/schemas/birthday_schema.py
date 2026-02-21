@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 
 class BirthdaySchema(BaseModel):
-    eid: int = Field(..., description="ID работника")
+    eid: str = Field(..., description="ID работника")
     full_name: str = Field(...)
     org_unit: str = Field(...)
     birth_date: date = Field(...)

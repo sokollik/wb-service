@@ -1,13 +1,13 @@
 from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from core.models.enums import OrgUnitType
 
 
 class OrgUnitManagerSchema(BaseModel):
-    eid: int = Field(..., description="EID руководителя")
+    eid: str = Field(..., description="EID руководителя")
     full_name: str = Field(..., description="ФИО руководителя")
     position: str = Field(..., description="Должность руководителя")
     manager_avatar_id: Optional[int] = Field(None)
@@ -57,7 +57,7 @@ class OrgUnitCreateSchema(BaseModel):
     name: str = Field(..., description="Название подразделения")
     unit_type: OrgUnitType = Field(..., description="Тип структурной единицы")
     parent_id: Optional[int] = Field(None, description="ID родительского подразделения")
-    manager_eid: Optional[int] = Field(None, description="EID руководителя")
+    manager_eid: Optional[str] = Field(None, description="EID руководителя")
     is_temporary: bool = Field(False, description="Флаг временного подразделения")
     start_date: Optional[date] = Field(None, description="Дата начала (для временных)")
     end_date: Optional[date] = Field(None, description="Дата окончания (для временных)")
@@ -77,7 +77,7 @@ class OrgUnitUpdateSchema(BaseModel):
 class OrgChangeLogShema(BaseModel):
     id: int = Field(...)
     org_unit_id: int = Field(...)
-    changed_by_eid: int = Field(...)
+    changed_by_eid: str = Field(...)
     changed_at: datetime = Field(...)
     field_name: str = Field(...)
 

@@ -1,26 +1,41 @@
+from typing import List
+
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy.orm import Session
+from pydantic import BaseModel
 
-from core.db import get_session
-from core.models.auth import AuthTokenOrm
+from core.common.token_service import TokenService
+from core.middleware import JWTBearer
 
-security = HTTPBearer()
+jwt_bearer = JWTBearer()
 
-def get_current_user_eid(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    session: Session = Depends(get_session),
-) -> int:
-    token = credentials.credentials
-    
-    auth_token = session.query(AuthTokenOrm).filter(
-        AuthTokenOrm.token == token
-    ).first()
-    
-    if not auth_token:
+
+class CurrentUser(BaseModel):
+    eid: str
+    email: str | None = None
+    username: str | None = None
+    roles: List[str] = []
+
+
+def get_current_user(token: str = Depends(jwt_bearer)) -> CurrentUser:
+    user_info = TokenService.get_user_info(token)
+    print(user_info)
+    if not user_info.get("eid"):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token"
+            detail="Token does not contain user ID",
         )
-    
-    return auth_token.employee_eid
+    return CurrentUser(**user_info)
+
+
+def require_roles(required_roles: List[str]):
+    def role_checker(
+        user: CurrentUser = Depends(get_current_user),
+    ) -> CurrentUser:
+        if not any(role in user.roles for role in required_roles):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Требуется одна из ролей: {required_roles}",
+            )
+        return user
+
+    return role_checker

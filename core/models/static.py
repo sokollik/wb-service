@@ -11,4 +11,4 @@ class FileOrm(Base):
     )
     name = Column(String)
     path = Column(String)
-    created_by = Column(Integer)
+    created_by = Column(String)

@@ -1,0 +1,874 @@
+{
+  "realm": "wb-realm",
+  "enabled": true,
+  "displayName": "WB Realm",
+  "displayNameHtml": "<div class=\"kc-logo-text\"><span>WB</span></div>",
+  "accessTokenLifespan": 300,
+  "accessTokenLifespanForImplicitFlow": 900,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "offlineSessionIdleTimeout": 2592000,
+  "accessCodeLifespan": 60,
+  "accessCodeLifespanUserAction": 300,
+  "accessCodeLifespanLogin": 1800,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 30,
+  "defaultRoles": [
+    "offline_access",
+    "uma_authorization",
+    "employee"
+  ],
+  "roles": {
+    "realm": [
+      {
+        "name": "admin",
+        "description": "Administrator role with full access"
+      },
+      {
+        "name": "hr",
+        "description": "HR role with employee management access"
+      },
+      {
+        "name": "employee",
+        "description": "Default employee role"
+      },
+      {
+        "name": "news_editor",
+        "description": "News editor role with news management access"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "wb-client",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "redirectUris": [
+        "http://localhost:*",
+        "http://localhost:3000/*",
+        "http://localhost:8000/*"
+      ],
+      "webOrigins": [
+        "*"
+      ],
+      "attributes": {
+        "access.token.lifespan": "300",
+        "client.secret.creation.time": "0"
+      },
+      "protocolMappers": [
+        {
+          "name": "eid-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "eid",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "eid",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "email-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "email",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "email",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "username-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "username",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "preferred_username",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "id": "3b3e359f-63a2-5b26-b0e7-6dfbc695bd5e",
+      "username": "smirnov.sp",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "smirnov.sp@wb.ru",
+      "firstName": "Сергей",
+      "lastName": "Смирнов",
+      "attributes": {
+        "eid": [
+          "1"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password1",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "admin",
+        "employee"
+      ]
+    },
+    {
+      "id": "be3950b6-ab98-5a70-9e28-07e4a67f9991",
+      "username": "ivanova.on",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "ivanova.on@wb.ru",
+      "firstName": "Ольга",
+      "lastName": "Иванова",
+      "attributes": {
+        "eid": [
+          "2"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password2",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "employee"
+      ]
+    },
+    {
+      "id": "4719193b-9bd8-50e2-a5c7-78dde63b2bb7",
+      "username": "petrov.av",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "petrov.av@wb.ru",
+      "firstName": "Алексей",
+      "lastName": "Петров",
+      "attributes": {
+        "eid": [
+          "3"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password3",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "employee"
+      ]
+    },
+    {
+      "id": "ce5f7006-3565-56f8-9f3c-3c12e7f80e14",
+      "username": "kuznetsova.em",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "kuznetsova.em@wb.ru",
+      "firstName": "Елена",
+      "lastName": "Кузнецова",
+      "attributes": {
+        "eid": [
+          "4"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password4",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "employee"
+      ]
+    },
+    {
+      "id": "eae7c9b2-c96c-5bbc-a30e-e602fd18ef88",
+      "username": "vasilyev.da",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "vasilyev.da@wb.ru",
+      "firstName": "Дмитрий",
+      "lastName": "Васильев",
+      "attributes": {
+        "eid": [
+          "5"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password5",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "hr",
+        "employee"
+      ]
+    },
+    {
+      "id": "8f6b5664-e8d2-58cc-82f2-6cb356fd9784",
+      "username": "sokolova.ms",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "sokolova.ms@wb.ru",
+      "firstName": "Мария",
+      "lastName": "Соколова",
+      "attributes": {
+        "eid": [
+          "6"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password6",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "hr",
+        "employee"
+      ]
+    },
+    {
+      "id": "dd11d7e6-2805-53a3-98c1-8642538386e1",
+      "username": "morozov.iv",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "morozov.iv@wb.ru",
+      "firstName": "Игорь",
+      "lastName": "Морозов",
+      "attributes": {
+        "eid": [
+          "7"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password7",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "employee"
+      ]
+    },
+    {
+      "id": "87cb0a66-82a8-5199-9a3b-86ce3e1bc96a",
+      "username": "novikova.ap",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "novikova.ap@wb.ru",
+      "firstName": "Анна",
+      "lastName": "Новикова",
+      "attributes": {
+        "eid": [
+          "8"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password8",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "employee"
+      ]
+    },
+    {
+      "id": "88f46b27-7a0d-551c-a970-cef765fa69be",
+      "username": "fedorov.pi",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "fedorov.pi@wb.ru",
+      "firstName": "Павел",
+      "lastName": "Фёдоров",
+      "attributes": {
+        "eid": [
+          "9"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password9",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "employee"
+      ]
+    },
+    {
+      "id": "9430a4c8-9546-5da4-a329-dd9b78d76d2d",
+      "username": "lebedeva.tv",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "lebedeva.tv@wb.ru",
+      "firstName": "Татьяна",
+      "lastName": "Лебедева",
+      "attributes": {
+        "eid": [
+          "10"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password10",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "employee"
+      ]
+    },
+    {
+      "id": "a2c5dbd0-55b3-570c-b703-5bc4d90c0df9",
+      "username": "kovalev.as",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "kovalev.as@wb.ru",
+      "firstName": "Артём",
+      "lastName": "Ковалёв",
+      "attributes": {
+        "eid": [
+          "11"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password11",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "employee"
+      ]
+    },
+    {
+      "id": "4063fcbd-c8cc-5c79-ae04-9b414e44d220",
+      "username": "orlova.vi",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "orlova.vi@wb.ru",
+      "firstName": "Виктория",
+      "lastName": "Орлова",
+      "attributes": {
+        "eid": [
+          "12"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password12",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "employee"
+      ]
+    },
+    {
+      "id": "4aa04efa-b70e-5686-a51e-407ca2b7d902",
+      "username": "stepanov.po.arch",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "stepanov.po.arch@wb.ru",
+      "firstName": "Павел",
+      "lastName": "Степанов",
+      "attributes": {
+        "eid": [
+          "13"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password13",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "employee"
+      ]
+    },
+    {
+      "id": "a2066e37-36ad-5a6c-8eac-682f5302df1c",
+      "username": "zhukova.ma.arch",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "zhukova.ma.arch@wb.ru",
+      "firstName": "Мария",
+      "lastName": "Жукова",
+      "attributes": {
+        "eid": [
+          "14"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password14",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "employee"
+      ]
+    },
+    {
+      "id": "83dd83bc-f2ae-598f-bf99-cad03ad679b4",
+      "username": "ivanov.ii",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "ivanov.ii@wb.ru",
+      "firstName": "Иван",
+      "lastName": "Иванов",
+      "attributes": {
+        "eid": [
+          "1001"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password1001",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "employee",
+        "news_editor"
+      ]
+    },
+    {
+      "id": "259cec4f-fd47-504c-98e7-575539aada70",
+      "username": "petrova.as",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "petrova.as@wb.ru",
+      "firstName": "Анна",
+      "lastName": "Петрова",
+      "attributes": {
+        "eid": [
+          "1002"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password1002",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "employee"
+      ]
+    },
+    {
+      "id": "c748f83c-d704-56ae-b51f-36210b8a7163",
+      "username": "sidorov.ap",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "sidorov.ap@wb.ru",
+      "firstName": "Алексей",
+      "lastName": "Сидоров",
+      "attributes": {
+        "eid": [
+          "1003"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password1003",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "employee"
+      ]
+    },
+    {
+      "id": "e7e6ebed-49e8-53db-b116-b433c59c403c",
+      "username": "kozlova.mv",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "kozlova.mv@wb.ru",
+      "firstName": "Мария",
+      "lastName": "Козлова",
+      "attributes": {
+        "eid": [
+          "1004"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password1004",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "employee"
+      ]
+    },
+    {
+      "id": "d01a2023-75b1-5e86-8bcd-cddae9027b89",
+      "username": "fedorov.da",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "fedorov.da@wb.ru",
+      "firstName": "Дмитрий",
+      "lastName": "Фёдоров",
+      "attributes": {
+        "eid": [
+          "1005"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password1005",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "employee"
+      ]
+    },
+    {
+      "id": "fc5788e2-078f-5cbe-b4ee-c44b5a26174f",
+      "username": "nikolaeva.ep",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "nikolaeva.ep@wb.ru",
+      "firstName": "Екатерина",
+      "lastName": "Николаева",
+      "attributes": {
+        "eid": [
+          "1006"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password1006",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "employee"
+      ]
+    },
+    {
+      "id": "1c031fa7-8ef1-59ca-ac6b-dc1c90d1f91d",
+      "username": "morozov.sv",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "morozov.sv@wb.ru",
+      "firstName": "Сергей",
+      "lastName": "Морозов",
+      "attributes": {
+        "eid": [
+          "1007"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password1007",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "employee"
+      ]
+    },
+    {
+      "id": "f9457b5b-c4d7-5c74-bd62-f54ba2fa3c24",
+      "username": "kuznetsova.oi",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "kuznetsova.oi@wb.ru",
+      "firstName": "Ольга",
+      "lastName": "Кузнецова",
+      "attributes": {
+        "eid": [
+          "1008"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password1008",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "employee"
+      ]
+    },
+    {
+      "id": "b69d7d29-3507-5f50-8b43-83c03e73702a",
+      "username": "sokolov.rm",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "sokolov.rm@wb.ru",
+      "firstName": "Роман",
+      "lastName": "Соколов",
+      "attributes": {
+        "eid": [
+          "1013"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password1013",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "employee"
+      ]
+    },
+    {
+      "id": "32be901f-3bed-57bc-9e52-13fcf4a58910",
+      "username": "grigoryev.mo",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "grigoryev.mo@wb.ru",
+      "firstName": "Максим",
+      "lastName": "Григорьев",
+      "attributes": {
+        "eid": [
+          "1017"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password1017",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "employee"
+      ]
+    },
+    {
+      "id": "bd8a2475-40ea-526b-a359-6bdbae5720ca",
+      "username": "krylov.av",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "krylov.av@wb.ru",
+      "firstName": "Антон",
+      "lastName": "Крылов",
+      "attributes": {
+        "eid": [
+          "1023"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password1023",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "employee"
+      ]
+    },
+    {
+      "id": "bae201cd-557a-569a-81e0-93a794be67c1",
+      "username": "egorova.pm",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "egorova.pm@wb.ru",
+      "firstName": "Полина",
+      "lastName": "Егорова",
+      "attributes": {
+        "eid": [
+          "1026"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password1026",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "employee"
+      ]
+    },
+    {
+      "id": "25a84314-dde9-5164-b07d-7a4b3a9bccb9",
+      "username": "soloveva.mv",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "soloveva.mv@wb.ru",
+      "firstName": "Марина",
+      "lastName": "Соловьёва",
+      "attributes": {
+        "eid": [
+          "1042"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password1042",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "hr",
+        "employee"
+      ]
+    },
+    {
+      "id": "5b881472-7e1a-5ad2-a8d2-79d63636b0af",
+      "username": "mironova.ya",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "mironova.ya@wb.ru",
+      "firstName": "Юлия",
+      "lastName": "Миронова",
+      "attributes": {
+        "eid": [
+          "1051"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password1051",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "hr",
+        "employee"
+      ]
+    },
+    {
+      "id": "ecd6d9ec-386f-5565-bd6c-8cab7bc94685",
+      "username": "kapustina.en",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "kapustina.en@wb.ru",
+      "firstName": "Елена",
+      "lastName": "Капустина",
+      "attributes": {
+        "eid": [
+          "1052"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password1052",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "hr",
+        "employee"
+      ]
+    },
+    {
+      "id": "b7abbb8a-f0cb-5934-aa35-ad053ea1295d",
+      "username": "bogdanov.ma",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "bogdanov.ma@wb.ru",
+      "firstName": "Максим",
+      "lastName": "Богданов",
+      "attributes": {
+        "eid": [
+          "1055"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password1055",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "employee"
+      ]
+    },
+    {
+      "id": "bc5559c9-05e3-541f-9843-6098a2862d0a",
+      "username": "stepanov.po.sec",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "stepanov.po.sec@wb.ru",
+      "firstName": "Павел",
+      "lastName": "Степанов",
+      "attributes": {
+        "eid": [
+          "1060"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password1060",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "employee"
+      ]
+    }
+  ],
+  "userManagedAccessAllowed": false
+}
