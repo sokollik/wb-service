@@ -1,16 +1,24 @@
-from typing import Literal
 import json
+import re
+from typing import Literal
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic.json import pydantic_encoder
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.common.common_exc import (
     NotAllowedHttpException,
     NotFoundHttpException,
 )
 from core.common.common_repo import CommonRepository
-from core.models.news import CommentOrm, CommentToFileOrm, CommentChangeLogOrm
+from core.models.emploee import EmployeeOrm
 from core.models.enums import ProfileOperationType
+from core.models.news import (
+    CommentChangeLogOrm,
+    CommentOrm,
+    CommentToFileOrm,
+    MentionOrm,
+)
 from core.repositories.comment_repo import CommentRepository
 from core.schemas.comment_schema import (
     CommentCreateSchema,
@@ -28,9 +36,14 @@ class CommentService:
         self.comment_repo = CommentRepository(session=self.session)
 
     async def get_comments(
-        self, news_id: int, sort_by: Literal["popular", "new"] = "new"
+        self,
+        news_id: int,
+        sort_by: Literal["popular", "new"] = "new",
+        user_eid: str | None = None,
     ) -> CommentViewSchema:
-        raw_comments = await self.comment_repo.get_comments(news_id, sort_by)
+        raw_comments = await self.comment_repo.get_comments(
+            news_id, sort_by, user_eid=user_eid
+        )
 
         if not raw_comments:
             return CommentViewSchema(result=[], count=0)
@@ -53,21 +66,20 @@ class CommentService:
 
         return CommentViewSchema(result=root_comments, count=len(raw_comments))
 
-    async def create_comment(self, comment: CommentCreateSchema):
+    async def create_comment(self, comment: CommentCreateSchema, author_eid: str):
         new_comment = await self.common_repo.add(
             CommentOrm(
                 news_id=comment.news_id,
-                author_id=comment.author_id,
+                author_id=author_eid,
                 parent_id=comment.parent_id,
                 content=comment.content,
             )
         )
 
-        # Логируем создание комментария
         await self._log_comment_change(
             comment_id=new_comment.id,
             news_id=comment.news_id,
-            changed_by_eid=comment.author_id,
+            changed_by_eid=author_eid,
             field_name="comment_created",
             old_value=None,
             new_value={
@@ -87,43 +99,44 @@ class CommentService:
             ]
         )
 
-        # Логируем файлы если есть
         if comment.file_ids:
             await self._log_comment_change(
                 comment_id=new_comment.id,
                 news_id=comment.news_id,
-                changed_by_eid=comment.author_id,
+                changed_by_eid=author_eid,
                 field_name="files",
                 old_value=None,
                 new_value=comment.file_ids,
                 operation=ProfileOperationType.CREATE,
             )
 
+        await self._process_mentions(new_comment.id, comment.content)
+
         return new_comment.id
 
-    async def edit_comment(self, comment: CommentUpdateSchema):
+    async def edit_comment(self, comment: CommentUpdateSchema, editor_eid: str):
         existing_comment = await self.common_repo.get_one(
             from_table=CommentOrm, where_stmt=(CommentOrm.id == comment.id)
         )
         if not existing_comment:
-            raise ValueError("Комментарий не найден")
+            raise NotFoundHttpException(name="comment")
+        if existing_comment.author_id != editor_eid:
+            raise NotAllowedHttpException(name="edit")
 
         old_content = existing_comment.content
         existing_comment.content = comment.content
         existing_comment.is_edited = True
 
-        # Логируем изменение содержимого
         await self._log_comment_change(
             comment_id=comment.id,
             news_id=existing_comment.news_id,
-            changed_by_eid=existing_comment.author_id,
+            changed_by_eid=editor_eid,
             field_name="content",
             old_value=old_content,
             new_value=comment.content,
             operation=ProfileOperationType.UPDATE,
         )
 
-        # Получаем старые файлы
         old_files = await self.common_repo.get_all_scalars(
             CommentToFileOrm, where_stmt=(CommentToFileOrm.comment_id == comment.id)
         )
@@ -143,27 +156,31 @@ class CommentService:
             ]
         )
 
-        # Логируем изменение файлов если они изменились
         if comment.file_ids != old_file_ids:
             await self._log_comment_change(
                 comment_id=comment.id,
                 news_id=existing_comment.news_id,
-                changed_by_eid=existing_comment.author_id,
+                changed_by_eid=editor_eid,
                 field_name="files",
                 old_value=old_file_ids,
                 new_value=comment.file_ids,
                 operation=ProfileOperationType.UPDATE,
             )
 
-    async def delete_comment(self, comment_id: int, eid: str):
+        await self.common_repo.delete(
+            from_table=MentionOrm,
+            where_stmt=(MentionOrm.comment_id == comment.id),
+        )
+        await self._process_mentions(comment.id, comment.content)
+
+    async def delete_comment(self, comment_id: int, eid: str, roles: list[str] = None):
         existing_comment = await self.common_repo.get_one(
             from_table=CommentOrm, where_stmt=(CommentOrm.id == comment_id)
         )
         if not existing_comment:
             raise NotFoundHttpException(name="comment")
-        if (
-            existing_comment.author_id != eid
-        ):  # тут еще проверка на админа должна быть потом
+        is_admin = roles and "admin" in roles
+        if existing_comment.author_id != eid and not is_admin:
             raise NotAllowedHttpException(name="delete")
 
         # Логируем удаление комментария
@@ -234,6 +251,26 @@ class CommentService:
             ),
         )
 
+    async def _process_mentions(self, comment_id: int, content: str):
+
+        mention_pattern = re.compile(r"@([\w.]+(?:\s[\w.]+)?)", re.UNICODE)
+        raw_mentions = mention_pattern.findall(content)
+
+        if not raw_mentions:
+            return
+
+        for mention_name in set(raw_mentions):
+            result = await self.session.execute(
+                select(EmployeeOrm.eid).where(
+                    EmployeeOrm.full_name.ilike(f"%{mention_name}%")
+                )
+            )
+            employees = result.scalars().all()
+            for eid in employees:
+                await self.common_repo.add(
+                    MentionOrm(comment_id=comment_id, mentioned_user_id=eid)
+                )
+
     async def _log_comment_change(
         self,
         comment_id: int,
@@ -244,7 +281,6 @@ class CommentService:
         new_value: any,
         operation: ProfileOperationType,
     ):
-        """Логирует изменение комментария в таблицу comment_change_log"""
         log_entry = CommentChangeLogOrm(
             comment_id=comment_id,
             news_id=news_id,
@@ -265,7 +301,6 @@ class CommentService:
         await self.common_repo.add(log_entry)
 
     async def get_comment_edit_log(self, comment_id: int):
-        """Получает историю всех изменений комментария"""
         logs = await self.common_repo.get_all_scalars(
             CommentChangeLogOrm,
             where_stmt=CommentChangeLogOrm.comment_id == comment_id,

@@ -1,23 +1,25 @@
+import json
 from datetime import datetime
 from typing import Optional
-import json
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic.json import pydantic_encoder
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.common.common_exc import NotFoundHttpException
 from core.common.common_repo import CommonRepository
+from core.models.enums import NewsStatus, ProfileOperationType
 from core.models.news import (
     CategoryOrm,
+    NewsAcknowledgementOrm,
+    NewsChangeLogOrm,
     NewsLikeOrm,
     NewsOrm,
     NewsTagOrm,
-    TagOrm,
     NewsToCategoryOrm,
     NewsToFileOrm,
-    NewsChangeLogOrm,
+    TagOrm,
+    UserFollowedCategoryOrm,
 )
-from core.models.enums import ProfileOperationType
 from core.repositories.news_repo import NewsRepository
 from core.schemas.news_schema import (
     CategoryCreateSchema,
@@ -42,6 +44,9 @@ class NewsService:
         size: int = 15,
         user_eid: Optional[str] = None,
         likes: Optional[bool] = None,
+        status: Optional[NewsStatus] = None,
+        tag: Optional[str] = None,
+        search: Optional[str] = None,
     ):
         offset = (page - 1) * size
 
@@ -54,11 +59,16 @@ class NewsService:
             offset=offset,
             user_eid=user_eid,
             likes=likes,
+            status=status,
+            tag=tag,
+            search=search,
         )
 
         return news_items
 
-    async def get_news_by_id(self, news_id: int, user_eid: Optional[str] = None):
+    async def get_news_by_id(
+        self, news_id: int, user_eid: Optional[str] = None
+    ):
         news = await self.news_repo.get_news_detail(news_id, user_eid=user_eid)
         if not news:
             raise NotFoundHttpException(name="news")
@@ -73,6 +83,8 @@ class NewsService:
                 author_id=author_id,
                 is_pinned=data.is_pinned,
                 mandatory_ack=data.mandatory_ack,
+                status=data.status,
+                expires_at=data.expires_at,
             )
         )
 
@@ -88,6 +100,10 @@ class NewsService:
                 "content": data.content,
                 "is_pinned": data.is_pinned,
                 "mandatory_ack": data.mandatory_ack,
+                "status": data.status.value,
+                "expires_at": (
+                    str(data.expires_at) if data.expires_at else None
+                ),
             },
             operation=ProfileOperationType.CREATE,
         )
@@ -127,7 +143,9 @@ class NewsService:
                 TagOrm(name=t_name), where_stmt=(TagOrm.name == t_name,)
             )
 
-            await self.common_repo.add(NewsTagOrm(news_id=new_news.id, tag_id=tag.id))
+            await self.common_repo.add(
+                NewsTagOrm(news_id=new_news.id, tag_id=tag.id)
+            )
 
         if data.tag_names:
             await self._log_news_change(
@@ -142,7 +160,9 @@ class NewsService:
         await self.common_repo.session.commit()
         return new_news.id
 
-    async def update_news(self, news_id: int, user_eid: str, data: NewsUpdateSchema):
+    async def update_news(
+        self, news_id: int, user_eid: str, data: NewsUpdateSchema
+    ):
 
         news = await self.common_repo.get_one(NewsOrm, (NewsOrm.id == news_id))
         if not news:
@@ -175,7 +195,8 @@ class NewsService:
         # Логируем изменение категорий
         if category_ids is not None:
             old_categories = await self.common_repo.get_all_scalars(
-                NewsToCategoryOrm, where_stmt=(NewsToCategoryOrm.news_id == news_id)
+                NewsToCategoryOrm,
+                where_stmt=(NewsToCategoryOrm.news_id == news_id),
             )
             old_category_ids = [cat.category_id for cat in old_categories]
 
@@ -205,12 +226,16 @@ class NewsService:
             )
             old_tag_ids = [tag.tag_id for tag in old_tags]
 
-            await self.common_repo.delete(NewsTagOrm, (NewsTagOrm.news_id == news_id))
+            await self.common_repo.delete(
+                NewsTagOrm, (NewsTagOrm.news_id == news_id)
+            )
             for t_name in tag_names:
                 tag = await self.common_repo.add(
                     TagOrm(name=t_name), where_stmt=(TagOrm.name == t_name,)
                 )
-                await self.common_repo.add(NewsTagOrm(news_id=news_id, tag_id=tag.id))
+                await self.common_repo.add(
+                    NewsTagOrm(news_id=news_id, tag_id=tag.id)
+                )
 
             await self._log_news_change(
                 news_id=news_id,
@@ -232,7 +257,8 @@ class NewsService:
                 NewsToFileOrm, (NewsToFileOrm.news_id == news_id)
             )
             file_links = [
-                NewsToFileOrm(news_id=news_id, file_id=f_id) for f_id in file_ids
+                NewsToFileOrm(news_id=news_id, file_id=f_id)
+                for f_id in file_ids
             ]
             if file_links:
                 await self.common_repo.add_all(file_links)
@@ -332,6 +358,92 @@ class NewsService:
             ),
         )
 
+    async def follow_category(self, category_id: int, user_eid: str):
+        existing = await self.common_repo.get_one(
+            from_table=CategoryOrm, where_stmt=(CategoryOrm.id == category_id)
+        )
+        if not existing:
+            raise NotFoundHttpException(name="category")
+
+        already_followed = await self.common_repo.get_one(
+            from_table=UserFollowedCategoryOrm,
+            where_stmt=(
+                (UserFollowedCategoryOrm.user_eid == user_eid),
+                (UserFollowedCategoryOrm.category_id == category_id),
+            ),
+        )
+        if already_followed:
+            return
+
+        await self.common_repo.add(
+            UserFollowedCategoryOrm(user_eid=user_eid, category_id=category_id)
+        )
+
+    async def unfollow_category(self, category_id: int, user_eid: str):
+        existing = await self.common_repo.get_one(
+            from_table=UserFollowedCategoryOrm,
+            where_stmt=(
+                (UserFollowedCategoryOrm.user_eid == user_eid),
+                (UserFollowedCategoryOrm.category_id == category_id),
+            ),
+        )
+        if not existing:
+            return
+
+        await self.common_repo.delete(
+            from_table=UserFollowedCategoryOrm,
+            where_stmt=(
+                (UserFollowedCategoryOrm.user_eid == user_eid),
+                (UserFollowedCategoryOrm.category_id == category_id),
+            ),
+        )
+
+    async def get_followed_categories(self, user_eid: str):
+        follows = await self.common_repo.get_all_scalars(
+            UserFollowedCategoryOrm,
+            where_stmt=(UserFollowedCategoryOrm.user_eid == user_eid),
+        )
+        category_ids = [f.category_id for f in follows]
+        if not category_ids:
+            return []
+
+        categories = await self.common_repo.get_all_scalars(
+            CategoryOrm,
+            where_stmt=(CategoryOrm.id.in_(category_ids)),
+        )
+        return categories
+
+    async def acknowledge_news(self, news_id: int, user_eid: str):
+        news = await self.common_repo.get_one(
+            from_table=NewsOrm, where_stmt=(NewsOrm.id == news_id)
+        )
+        if not news:
+            raise NotFoundHttpException(name="news")
+
+        existing = await self.common_repo.get_one(
+            from_table=NewsAcknowledgementOrm,
+            where_stmt=(
+                (NewsAcknowledgementOrm.news_id == news_id),
+                (NewsAcknowledgementOrm.user_eid == user_eid),
+            ),
+        )
+        if existing:
+            return
+
+        await self.common_repo.add(
+            NewsAcknowledgementOrm(news_id=news_id, user_eid=user_eid)
+        )
+
+    async def get_acknowledgements(self, news_id: int):
+        acks = await self.common_repo.get_all_scalars(
+            NewsAcknowledgementOrm,
+            where_stmt=(NewsAcknowledgementOrm.news_id == news_id),
+        )
+        return [
+            {"user_eid": a.user_eid, "acknowledged_at": a.acknowledged_at}
+            for a in acks
+        ]
+
     async def _log_news_change(
         self,
         news_id: int,
@@ -341,7 +453,6 @@ class NewsService:
         new_value: any,
         operation: ProfileOperationType,
     ):
-        """Логирует изменение новости в таблицу news_change_log"""
         log_entry = NewsChangeLogOrm(
             news_id=news_id,
             changed_by_eid=changed_by_eid,
@@ -361,7 +472,6 @@ class NewsService:
         await self.common_repo.add(log_entry)
 
     async def get_news_edit_log(self, news_id: int):
-        """Получает историю всех изменений новости"""
         logs = await self.common_repo.get_all_scalars(
             NewsChangeLogOrm,
             where_stmt=NewsChangeLogOrm.news_id == news_id,

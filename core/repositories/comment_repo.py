@@ -1,6 +1,6 @@
-from typing import Literal
+from typing import Literal, Optional
 
-from sqlalchemy import desc, func, select
+from sqlalchemy import Boolean, case, desc, exists, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.models.emploee import EmployeeOrm
@@ -15,7 +15,10 @@ class CommentRepository:
         self.session = session
 
     async def get_comments(
-        self, news_id: int, sort_by: Literal["popular", "new"] = "new"
+        self,
+        news_id: int,
+        sort_by: Literal["popular", "new"] = "new",
+        user_eid: Optional[str] = None,
     ):
         files_subq = (
             select(
@@ -35,6 +38,23 @@ class CommentRepository:
             .subquery()
         )
 
+        is_liked_expr = (
+            case(
+                (
+                    exists(
+                        select(CommentLikeOrm.user_id).where(
+                            (CommentLikeOrm.comment_id == CommentOrm.id)
+                            & (CommentLikeOrm.user_id == user_eid)
+                        )
+                    ),
+                    True,
+                ),
+                else_=False,
+            ).label("is_liked")
+            if user_eid
+            else func.cast(False, Boolean).label("is_liked")
+        )
+
         query = (
             select(
                 CommentOrm.id,
@@ -52,6 +72,7 @@ class CommentRepository:
                 func.coalesce(
                     files_subq.c.file_ids, func.json_build_array()
                 ).label("file_ids"),
+                is_liked_expr,
             )
             .join(EmployeeOrm, CommentOrm.author_id == EmployeeOrm.eid)
             .outerjoin(likes_subq, CommentOrm.id == likes_subq.c.comment_id)

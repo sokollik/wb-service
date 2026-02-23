@@ -271,3 +271,23 @@ class CommentChangeLogOrm(Base):
         nullable=False,
         comment="Тип операции (CREATE, UPDATE, DELETE)",
     )
+
+
+class NewsAcknowledgementOrm(Base):
+    __tablename__ = "news_acknowledgements"
+
+    news_id = Column(
+        BigInteger,
+        ForeignKey("news.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    user_eid = Column(
+        String,
+        ForeignKey("employee.eid"),
+        primary_key=True,
+    )
+    acknowledged_at = Column(
+        DateTime,
+        nullable=False,
+        server_default=func.now(),
+    )

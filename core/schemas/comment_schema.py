@@ -19,6 +19,7 @@ class CommentSchema(BaseModel):
     file_ids: List[int] | None = Field(None)
 
     likes_count: int = Field(...)
+    is_liked: bool = Field(False)
     replies_count: int = Field(...)
 
     replies: List["CommentSchema"] = Field([])
@@ -33,7 +34,6 @@ class CommentViewSchema(BaseModel):
 
 
 class CommentCreateSchema(BaseModel):
-    author_id: str = Field(..., description="EID автора комментария")
     news_id: int = Field(..., description="ID новости")
     parent_id: int | None = Field(
         None, description="ID родительского комментария"

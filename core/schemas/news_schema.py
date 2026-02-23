@@ -3,6 +3,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
+from core.models.enums import NewsStatus
+
 
 class CategorySchema(BaseModel):
     id: int
@@ -52,6 +54,7 @@ class NewsFullSchema(BaseModel):
 
     content: str
     mandatory_ack: bool
+    is_acknowledged: bool = False
     expires_at: Optional[datetime] = None
     tags: List[str] = []
     categories: List[CategorySchema] = []
@@ -69,6 +72,8 @@ class NewsCreateSchema(BaseModel):
     is_pinned: bool = False
     mandatory_ack: bool = False
     file_ids: List[int] = []
+    status: NewsStatus = NewsStatus.PUBLISHED
+    expires_at: Optional[datetime] = None
 
 
 class NewsUpdateSchema(BaseModel):
@@ -80,3 +85,5 @@ class NewsUpdateSchema(BaseModel):
     is_pinned: Optional[bool] = None
     mandatory_ack: Optional[bool] = None
     file_ids: Optional[List[int]] = None
+    status: Optional[NewsStatus] = None
+    expires_at: Optional[datetime] = None

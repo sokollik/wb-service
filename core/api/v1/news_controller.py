@@ -6,6 +6,7 @@ from fastapi_restful.cbv import cbv
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.api.deps import CurrentUser, require_roles
+from core.models.enums import NewsStatus
 from core.schemas.news_schema import (
     CategoryCreateSchema,
     CategorySchema,
@@ -41,6 +42,9 @@ class NewsController:
         page: int = Query(1),
         size: int = Query(15),
         likes: Optional[bool] = Query(None),
+        status: Optional[NewsStatus] = Query(None),
+        tag: Optional[str] = Query(None),
+        search: Optional[str] = Query(None),
     ):
         return await self.news_service.get_news(
             category_id=category_id,
@@ -51,6 +55,9 @@ class NewsController:
             size=size,
             user_eid=current_user.eid,
             likes=likes,
+            status=status,
+            tag=tag,
+            search=search,
         )
 
     @news_router.get("/categories", response_model=List[CategorySchema])
@@ -71,6 +78,44 @@ class NewsController:
         _current_user: CurrentUser = Depends(require_roles(["admin"])),
     ):
         return await self.news_service.add_category(data)
+
+    @news_router.get("/categories/followed", response_model=List[CategorySchema])
+    @exception_handler
+    async def get_followed_categories(
+        self,
+        current_user: CurrentUser = Depends(
+            require_roles(["employee", "hr", "admin", "news_editor"])
+        ),
+    ):
+        return await self.news_service.get_followed_categories(
+            user_eid=current_user.eid
+        )
+
+    @news_router.post("/categories/{category_id}/follow")
+    @exception_handler
+    async def follow_category(
+        self,
+        category_id: int,
+        current_user: CurrentUser = Depends(
+            require_roles(["employee", "hr", "admin", "news_editor"])
+        ),
+    ):
+        await self.news_service.follow_category(
+            category_id=category_id, user_eid=current_user.eid
+        )
+
+    @news_router.delete("/categories/{category_id}/follow")
+    @exception_handler
+    async def unfollow_category(
+        self,
+        category_id: int,
+        current_user: CurrentUser = Depends(
+            require_roles(["employee", "hr", "admin", "news_editor"])
+        ),
+    ):
+        await self.news_service.unfollow_category(
+            category_id=category_id, user_eid=current_user.eid
+        )
 
     @news_router.get("/{news_id}", response_model=NewsFullSchema)
     @exception_handler
@@ -164,3 +209,25 @@ class NewsController:
         current_user: CurrentUser = Depends(require_roles(["admin"])),
     ):
         return await self.news_service.get_news_edit_log(news_id=news_id)
+
+    @news_router.post("/{news_id}/acknowledge")
+    @exception_handler
+    async def acknowledge_news(
+        self,
+        news_id: int,
+        current_user: CurrentUser = Depends(
+            require_roles(["employee", "hr", "admin", "news_editor"])
+        ),
+    ):
+        await self.news_service.acknowledge_news(
+            news_id=news_id, user_eid=current_user.eid
+        )
+
+    @news_router.get("/{news_id}/acknowledgements")
+    @exception_handler
+    async def get_acknowledgements(
+        self,
+        news_id: int,
+        current_user: CurrentUser = Depends(require_roles(["admin"])),
+    ):
+        return await self.news_service.get_acknowledgements(news_id=news_id)
