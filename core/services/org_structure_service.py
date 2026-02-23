@@ -1,24 +1,26 @@
-from sqlalchemy.ext.asyncio import AsyncSession
 import json
+
 from pydantic.json import pydantic_encoder
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.common.common_exc import (
     NotFoundHttpException,
     WrongParametersHttpException,
 )
 from core.common.common_repo import CommonRepository
-from core.models.org_structure import OrgUnitOrm, OrgChangeLogOrm
 from core.models.enums import ProfileOperationType
+from core.models.org_structure import OrgChangeLogOrm, OrgUnitOrm
 from core.repositories.org_structure_repo import OrgStructureRepository
 from core.schemas.org_structure_schema import (
+    OrgUnitBaseSchema,
+    OrgUnitCreateSchema,
     OrgUnitHierarchySchema,
     OrgUnitManagerSchema,
-    OrgUnitCreateSchema,
     OrgUnitUpdateSchema,
-    OrgUnitBaseSchema,
 )
-from core.services.elastic_sync_service import EmployeeSyncService
 from core.services.elastic_search_service import EmployeeElasticsearchService
+from core.services.elastic_sync_service import EmployeeSyncService
+
 
 class OrgStructureService:
 

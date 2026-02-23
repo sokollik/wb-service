@@ -18,6 +18,7 @@ from core.models.news import (
     CommentOrm,
     CommentToFileOrm,
     MentionOrm,
+    NewsOrm,
 )
 from core.repositories.comment_repo import CommentRepository
 from core.schemas.comment_schema import (
@@ -67,6 +68,14 @@ class CommentService:
         return CommentViewSchema(result=root_comments, count=len(raw_comments))
 
     async def create_comment(self, comment: CommentCreateSchema, author_eid: str):
+        news = await self.common_repo.get_one(
+            from_table=NewsOrm, where_stmt=(NewsOrm.id == comment.news_id)
+        )
+        if not news:
+            raise NotFoundHttpException(name="news")
+        if not news.comments_enabled:
+            raise NotAllowedHttpException(name="comments")
+
         new_comment = await self.common_repo.add(
             CommentOrm(
                 news_id=comment.news_id,
@@ -183,7 +192,6 @@ class CommentService:
         if existing_comment.author_id != eid and not is_admin:
             raise NotAllowedHttpException(name="delete")
 
-        # Логируем удаление комментария
         await self._log_comment_change(
             comment_id=comment_id,
             news_id=existing_comment.news_id,

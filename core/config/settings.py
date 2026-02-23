@@ -48,6 +48,10 @@ class Settings(BaseSettings):
 
     API_KEY_1C: str = os.getenv("API_KEY_1C", "")
 
+    SCHEDULED_NEWS_CHECK_INTERVAL: int = int(
+        os.getenv("SCHEDULED_NEWS_CHECK_INTERVAL", "60")
+    )
+
 
 def get_settings():
     return Settings()

@@ -91,7 +91,7 @@ class OrgStructureController:
         self,
         unit_id: int,
         data: OrgUnitUpdateSchema,
-        current_user: CurrentUser = Depends(require_roles(["admin"])),
+        current_user: CurrentUser = Depends(require_roles(["admin", "hr"])),
     ):
         await self.org_structure_service.update_org_unit(
             unit_id, data, current_user.eid

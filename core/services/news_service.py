@@ -75,6 +75,10 @@ class NewsService:
         return news
 
     async def create_news(self, author_id: str, data: NewsCreateSchema):
+        status = data.status
+        if data.scheduled_publish_at:
+            status = NewsStatus.SCHEDULED
+
         new_news = await self.common_repo.add(
             NewsOrm(
                 title=data.title,
@@ -83,12 +87,13 @@ class NewsService:
                 author_id=author_id,
                 is_pinned=data.is_pinned,
                 mandatory_ack=data.mandatory_ack,
-                status=data.status,
+                comments_enabled=data.comments_enabled,
+                status=status,
+                scheduled_publish_at=data.scheduled_publish_at,
                 expires_at=data.expires_at,
             )
         )
 
-        # Логируем создание новости
         await self._log_news_change(
             news_id=new_news.id,
             changed_by_eid=author_id,
@@ -100,7 +105,13 @@ class NewsService:
                 "content": data.content,
                 "is_pinned": data.is_pinned,
                 "mandatory_ack": data.mandatory_ack,
-                "status": data.status.value,
+                "comments_enabled": data.comments_enabled,
+                "status": status.value,
+                "scheduled_publish_at": (
+                    str(data.scheduled_publish_at)
+                    if data.scheduled_publish_at
+                    else None
+                ),
                 "expires_at": (
                     str(data.expires_at) if data.expires_at else None
                 ),
@@ -174,7 +185,6 @@ class NewsService:
         file_ids = update_data.pop("file_ids", None)
         category_ids = update_data.pop("category_ids", None)
 
-        # Логируем изменения полей основной таблицы
         if update_data:
             for field_name, new_value in update_data.items():
                 old_value = getattr(news, field_name, None)
@@ -192,7 +202,6 @@ class NewsService:
                 values=update_data,
             )
 
-        # Логируем изменение категорий
         if category_ids is not None:
             old_categories = await self.common_repo.get_all_scalars(
                 NewsToCategoryOrm,
@@ -219,7 +228,6 @@ class NewsService:
                 operation=ProfileOperationType.UPDATE,
             )
 
-        # Логируем изменение тегов
         if tag_names is not None:
             old_tags = await self.common_repo.get_all_scalars(
                 NewsTagOrm, where_stmt=(NewsTagOrm.news_id == news_id)
@@ -246,7 +254,6 @@ class NewsService:
                 operation=ProfileOperationType.UPDATE,
             )
 
-        # Логируем изменение файлов
         if file_ids is not None:
             old_files = await self.common_repo.get_all_scalars(
                 NewsToFileOrm, where_stmt=(NewsToFileOrm.news_id == news_id)
@@ -273,12 +280,10 @@ class NewsService:
             )
 
     async def delete_news(self, news_id: int, user_eid: str):
-        # Получаем информацию о новости перед удалением
         news = await self.common_repo.get_one(NewsOrm, (NewsOrm.id == news_id))
         if not news:
             raise NotFoundHttpException(name="news")
 
-        # Логируем удаление
         await self._log_news_change(
             news_id=news_id,
             changed_by_eid=user_eid,

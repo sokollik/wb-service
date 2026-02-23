@@ -122,6 +122,7 @@ class NewsRepository:
                 NewsOrm.published_at,
                 NewsOrm.views_count,
                 NewsOrm.is_pinned,
+                NewsOrm.comments_enabled,
                 EmployeeOrm.full_name.label("author_name"),
                 func.coalesce(likes_subq.c.likes_count, 0).label(
                     "likes_count"
@@ -320,6 +321,8 @@ class NewsRepository:
                 NewsOrm.published_at,
                 NewsOrm.is_pinned,
                 NewsOrm.mandatory_ack,
+                NewsOrm.comments_enabled,
+                NewsOrm.scheduled_publish_at,
                 NewsOrm.views_count,
                 NewsOrm.status,
                 EmployeeOrm.full_name.label("author_name"),
@@ -361,3 +364,19 @@ class NewsRepository:
         self.session.add(category)
         await self.session.flush()
         return category
+
+    async def publish_scheduled_news(self) -> int:
+        """Публикует все новости, у которых наступило время scheduled_publish_at."""
+        result = await self.session.execute(
+            update(NewsOrm)
+            .where(
+                NewsOrm.status == NewsStatus.SCHEDULED,
+                NewsOrm.scheduled_publish_at <= func.now(),
+            )
+            .values(
+                status=NewsStatus.PUBLISHED,
+                published_at=func.now(),
+            )
+        )
+        await self.session.commit()
+        return result.rowcount

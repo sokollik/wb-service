@@ -1,4 +1,5 @@
 import os
+from datetime import date
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Query
@@ -9,6 +10,7 @@ from core.api.deps import CurrentUser, require_roles
 from core.schemas.profile_schema import (
     ProfileChangeLogSchema,
     ProfileExportFilter,
+    ProfileListItemSchema,
     ProfileSchema,
     ProfileUpdateSchema,
     SearchResponse,
@@ -71,6 +73,35 @@ class ProfileController:
     ):
         return await self.profile_service.update_profile(
             eid=current_user.eid, profile_data=profile_data
+        )
+
+    @profile_controller.get("/list", response_model=List[ProfileListItemSchema])
+    @exception_handler
+    async def get_profiles_list(
+        self,
+        _current_user: CurrentUser = Depends(require_roles(["hr", "admin"])),
+        eid: Optional[str] = Query(None, description="Фильтр по ID сотрудника"),
+        full_name: Optional[str] = Query(None, description="Поиск по ФИО (частичное совпадение)"),
+        position: Optional[str] = Query(None, description="Поиск по должности (частичное совпадение)"),
+        work_email: Optional[str] = Query(None, description="Поиск по email (частичное совпадение)"),
+        work_band: Optional[str] = Query(None, description="Фильтр по грейду/band"),
+        is_fired: Optional[bool] = Query(None, description="Фильтр по статусу увольнения"),
+        hire_date_from: Optional[date] = Query(None, description="Дата найма от"),
+        hire_date_to: Optional[date] = Query(None, description="Дата найма до"),
+        page: int = Query(1, ge=1, description="Номер страницы"),
+        size: int = Query(20, ge=1, le=100, description="Количество записей на странице"),
+    ):
+        return await self.profile_service.get_profiles_list(
+            eid=eid,
+            full_name=full_name,
+            position=position,
+            work_email=work_email,
+            work_band=work_band,
+            is_fired=is_fired,
+            hire_date_from=hire_date_from,
+            hire_date_to=hire_date_to,
+            page=page,
+            size=size,
         )
 
     @profile_controller.get("/log")

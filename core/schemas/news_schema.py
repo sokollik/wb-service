@@ -27,6 +27,7 @@ class NewsListResponseSchema(BaseModel):
     file_ids: List[int] = []
     published_at: datetime
     is_pinned: bool
+    comments_enabled: bool = True
 
     views_count: int
     likes_count: int = 0
@@ -46,6 +47,7 @@ class NewsFullSchema(BaseModel):
     file_ids: List[int] = []
     published_at: datetime
     is_pinned: bool
+    comments_enabled: bool = True
 
     views_count: int
     likes_count: int = 0
@@ -56,6 +58,7 @@ class NewsFullSchema(BaseModel):
     mandatory_ack: bool
     is_acknowledged: bool = False
     expires_at: Optional[datetime] = None
+    scheduled_publish_at: Optional[datetime] = None
     tags: List[str] = []
     categories: List[CategorySchema] = []
 
@@ -71,8 +74,10 @@ class NewsCreateSchema(BaseModel):
     tag_names: List[str] = []
     is_pinned: bool = False
     mandatory_ack: bool = False
+    comments_enabled: bool = True
     file_ids: List[int] = []
     status: NewsStatus = NewsStatus.PUBLISHED
+    scheduled_publish_at: Optional[datetime] = None
     expires_at: Optional[datetime] = None
 
 
@@ -84,6 +89,8 @@ class NewsUpdateSchema(BaseModel):
     tag_names: Optional[List[str]] = None
     is_pinned: Optional[bool] = None
     mandatory_ack: Optional[bool] = None
+    comments_enabled: Optional[bool] = None
     file_ids: Optional[List[int]] = None
     status: Optional[NewsStatus] = None
+    scheduled_publish_at: Optional[datetime] = None
     expires_at: Optional[datetime] = None

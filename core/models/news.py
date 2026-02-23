@@ -28,8 +28,10 @@ class NewsOrm(Base):
     mandatory_ack = Column(Boolean, default=False)
 
     status = Column(Enum(NewsStatus), nullable=False, default=NewsStatus.DRAFT)
+    comments_enabled = Column(Boolean, default=True, nullable=False)
 
     published_at = Column(DateTime, server_default=func.now(), index=True)
+    scheduled_publish_at = Column(DateTime, nullable=True, index=True)
     expires_at = Column(DateTime, nullable=True)
     views_count = Column(BigInteger, default=0)
 

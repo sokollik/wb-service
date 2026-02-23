@@ -1,8 +1,7 @@
 from sqlalchemy import and_, exists, select
 from sqlalchemy.orm import Session
 
-from core.models.employee import EmployeeOrm, DepartmentOrm
-from core.models.profile import ProfileOrm
+from core.models.employee import EmployeeOrm
 
 
 class AccessService:

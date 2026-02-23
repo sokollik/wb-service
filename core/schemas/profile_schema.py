@@ -126,3 +126,19 @@ class SearchResponse(BaseModel):
 class SuggestResponse(BaseModel):
     """Ответ от автодополнения"""
     suggestions: List[EmployeeSuggestion]
+
+
+class ProfileListItemSchema(BaseModel):
+    eid: str
+    full_name: str
+    position: str
+    org_unit: str | None = None
+    birth_date: date | None = None
+    hire_date: date | None = None
+    work_phone: str | None = None
+    work_email: str | None = None
+    work_band: str | None = None
+    is_fired: bool = False
+
+    class Config:
+        from_attributes = True
