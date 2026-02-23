@@ -31,7 +31,9 @@ class NewsController:
     @exception_handler
     async def get_news(
         self,
-        current_user: CurrentUser = Depends(require_roles(["employee"])),
+        current_user: CurrentUser = Depends(
+            require_roles(["employee", "hr", "admin", "news_editor"])
+        ),
         category_id: Optional[int] = Query(None),
         date_from: Optional[datetime] = Query(None),
         date_to: Optional[datetime] = Query(None),
@@ -55,7 +57,9 @@ class NewsController:
     @exception_handler
     async def get_categories(
         self,
-        _current_user: CurrentUser = Depends(require_roles(["employee"])),
+        _current_user: CurrentUser = Depends(
+            require_roles(["employee", "hr", "admin", "news_editor"])
+        ),
     ):
         return await self.news_service.get_categories()
 
@@ -73,7 +77,9 @@ class NewsController:
     async def get_news_by_id(
         self,
         news_id: int,
-        current_user: CurrentUser = Depends(require_roles(["employee"])),
+        current_user: CurrentUser = Depends(
+            require_roles(["employee", "hr", "admin", "news_editor"])
+        ),
     ):
         return await self.news_service.get_news_by_id(
             news_id, user_eid=current_user.eid
@@ -84,7 +90,9 @@ class NewsController:
     async def create_news(
         self,
         data: NewsCreateSchema,
-        current_user: CurrentUser = Depends(require_roles(["news_editor", "admin"])),
+        current_user: CurrentUser = Depends(
+            require_roles(["news_editor", "admin"])
+        ),
     ):
         return await self.news_service.create_news(
             author_id=current_user.eid, data=data
@@ -96,7 +104,9 @@ class NewsController:
         self,
         news_id: int,
         data: NewsUpdateSchema,
-        current_user: CurrentUser = Depends(require_roles(["news_editor", "admin"])),
+        current_user: CurrentUser = Depends(
+            require_roles(["news_editor", "admin"])
+        ),
     ):
         return await self.news_service.update_news(
             news_id=news_id, user_eid=current_user.eid, data=data
@@ -107,7 +117,9 @@ class NewsController:
     async def delete_news(
         self,
         news_id: int,
-        current_user: CurrentUser = Depends(require_roles(["news_editor", "admin"])),
+        current_user: CurrentUser = Depends(
+            require_roles(["news_editor", "admin"])
+        ),
     ):
         return await self.news_service.delete_news(news_id, current_user.eid)
 
@@ -116,7 +128,9 @@ class NewsController:
     async def add_like(
         self,
         news_id: int,
-        current_user: CurrentUser = Depends(require_roles(["employee"])),
+        current_user: CurrentUser = Depends(
+            require_roles(["employee", "hr", "admin", "news_editor"])
+        ),
     ):
         await self.news_service.add_like(news_id=news_id, eid=current_user.eid)
 
@@ -125,9 +139,13 @@ class NewsController:
     async def remove_like(
         self,
         news_id: int,
-        current_user: CurrentUser = Depends(require_roles(["employee"])),
+        current_user: CurrentUser = Depends(
+            require_roles(["employee", "hr", "admin", "news_editor"])
+        ),
     ):
-        await self.news_service.remove_like(news_id=news_id, eid=current_user.eid)
+        await self.news_service.remove_like(
+            news_id=news_id, eid=current_user.eid
+        )
 
     @news_router.delete("/categories/{category_id}")
     @exception_handler

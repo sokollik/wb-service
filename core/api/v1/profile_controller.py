@@ -44,7 +44,7 @@ class ProfileController:
     async def view_profile(
         self,
         current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin"])
+            require_roles(["employee", "hr", "admin", "news_editor"])
         ),
     ) -> ProfileSchema:
         return await self.profile_service.get_my_profile(eid=current_user.eid)
@@ -53,7 +53,9 @@ class ProfileController:
     @exception_handler
     async def share_profile(
         self,
-        current_user: CurrentUser = Depends(require_roles(["employee"])),
+        current_user: CurrentUser = Depends(
+            require_roles(["employee", "hr", "admin", "news_editor"])
+        ),
     ) -> str:
         web_url = os.getenv("WEB_URL")
         return web_url + f"/profile/{current_user.eid}"
@@ -63,7 +65,9 @@ class ProfileController:
     async def edit_profile(
         self,
         profile_data: ProfileUpdateSchema,
-        current_user: CurrentUser = Depends(require_roles(["employee"])),
+        current_user: CurrentUser = Depends(
+            require_roles(["employee", "hr", "admin", "news_editor"])
+        ),
     ):
         return await self.profile_service.update_profile(
             eid=current_user.eid, profile_data=profile_data
@@ -73,7 +77,7 @@ class ProfileController:
     @exception_handler
     async def get_profile_edit_log(
         self,
-        current_user: CurrentUser = Depends(require_roles(["employee"])),
+        current_user: CurrentUser = Depends(require_roles(["hr", "admin"])),
     ) -> List[ProfileChangeLogSchema]:
         return await self.profile_service.get_profile_edit_log(
             eid=current_user.eid
@@ -101,7 +105,9 @@ class ProfileController:
         size: int = Query(
             10, ge=1, le=100, description="Количество результатов"
         ),
-        _current_user: CurrentUser = Depends(require_roles(["employee"])),
+        _current_user: CurrentUser = Depends(
+            require_roles(["employee", "hr", "admin", "news_editor"])
+        ),
     ) -> SearchResponse:
         result = self.es_service.search_employees(
             query=q,
@@ -116,7 +122,9 @@ class ProfileController:
         self,
         q: str = Query(..., min_length=2, description="Начало поиска по ФИО"),
         size: int = Query(10, ge=1, le=50, description="Количество подсказок"),
-        _current_user: CurrentUser = Depends(require_roles(["employee"])),
+        _current_user: CurrentUser = Depends(
+            require_roles(["employee", "hr", "admin", "news_editor"])
+        ),
     ) -> SuggestResponse:
         suggestions = self.es_service.suggest_employees(query=q, size=size)
         return SuggestResponse(suggestions=suggestions)
@@ -125,7 +133,9 @@ class ProfileController:
     @exception_handler
     async def get_search_stats(
         self,
-        _current_user: CurrentUser = Depends(require_roles(["employee"])),
+        _current_user: CurrentUser = Depends(
+            require_roles(["employee", "hr", "admin", "news_editor"])
+        ),
     ):
         stats = self.es_service.get_index_stats()
         return stats

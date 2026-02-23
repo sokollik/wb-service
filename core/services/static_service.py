@@ -3,18 +3,19 @@ from typing import Literal
 from fastapi import BackgroundTasks, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from core.common.common_exc import (
     NotFoundHttpException,
     WrongParametersHttpException,
 )
 from core.common.common_repo import CommonRepository
 from core.config.settings import get_settings
-from core.models.enums import FileType
-from core.models.static import FileOrm
 from core.exceptions.static_exc import (
     IncorrectFileTypeHttpException,
     UploadingFileTooBigHttpException,
 )
+from core.models.enums import FileType
+from core.models.static import FileOrm
 from core.repositories.static_repo import StaticRepository
 from core.utils.text_util import get_extension, get_mime_type
 

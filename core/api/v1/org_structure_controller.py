@@ -31,13 +31,17 @@ class OrgStructureController:
     ):
         self.session = session
         self.es_service = es_service
-        self.org_structure_service = OrgStructureService(session=session, es_service=self.es_service)
+        self.org_structure_service = OrgStructureService(
+            session=session, es_service=self.es_service
+        )
 
     @org_structure_controller.get("/hierarchy")
     @exception_handler
     async def get_full_org_hierarchy(
         self,
-        _current_user: CurrentUser = Depends(require_roles(["employee"])),
+        _current_user: CurrentUser = Depends(
+            require_roles(["employee", "hr", "admin", "news_editor"])
+        ),
     ) -> List[OrgUnitHierarchySchema]:
         return await self.org_structure_service.get_org_structure_hierarchy()
 
@@ -53,21 +57,29 @@ class OrgStructureController:
             unit_id=unit_id, new_parent_id=new_parent_id
         )
 
-    @org_structure_controller.post("/units/add", summary="Создать подразделение")
+    @org_structure_controller.post(
+        "/units/add", summary="Создать подразделение"
+    )
     @exception_handler
     async def create_org_unit(
         self,
         data: OrgUnitCreateSchema,
         current_user: CurrentUser = Depends(require_roles(["admin"])),
     ):
-        return await self.org_structure_service.create_org_unit(data, current_user.eid)
+        return await self.org_structure_service.create_org_unit(
+            data, current_user.eid
+        )
 
-    @org_structure_controller.get("/units/get", summary="Получить подразделение по ID")
+    @org_structure_controller.get(
+        "/units/get", summary="Получить подразделение по ID"
+    )
     @exception_handler
     async def get_org_unit(
         self,
         unit_id: int,
-        _current_user: CurrentUser = Depends(require_roles(["employee"])),
+        _current_user: CurrentUser = Depends(
+            require_roles(["employee", "hr", "admin", "news_editor"])
+        ),
     ):
         return await self.org_structure_service.get_org_unit(unit_id)
 
@@ -81,7 +93,9 @@ class OrgStructureController:
         data: OrgUnitUpdateSchema,
         current_user: CurrentUser = Depends(require_roles(["admin"])),
     ):
-        await self.org_structure_service.update_org_unit(unit_id, data, current_user.eid)
+        await self.org_structure_service.update_org_unit(
+            unit_id, data, current_user.eid
+        )
         return
 
     @org_structure_controller.delete(
@@ -93,7 +107,9 @@ class OrgStructureController:
         unit_id: int,
         current_user: CurrentUser = Depends(require_roles(["admin"])),
     ):
-        await self.org_structure_service.delete_org_unit(unit_id, current_user.eid)
+        await self.org_structure_service.delete_org_unit(
+            unit_id, current_user.eid
+        )
         return
 
     @org_structure_controller.patch(
@@ -117,6 +133,6 @@ class OrgStructureController:
     async def get_org_unit_edit_log(
         self,
         unit_id: int,
-        _current_user: CurrentUser = Depends(require_roles(["employee"])),
+        _current_user: CurrentUser = Depends(require_roles(["admin"])),
     ) -> list[OrgChangeLogShema]:
         return await self.org_structure_service.get_org_unit_edit_log(unit_id)
