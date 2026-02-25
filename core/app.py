@@ -3,10 +3,9 @@ import logging
 import sys
 import traceback
 from contextlib import asynccontextmanager
-
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+from fastapi_swagger_dark import swagger_dark_ui
 from core.api.v1.v1 import v1_router
 from core.config.settings import get_settings
 from core.services.elastic_sync_service import EmployeeSyncService
@@ -16,14 +15,12 @@ from core.utils.scheduler import scheduled_news_publisher
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     stream=sys.stdout,
 )
 logger = logging.getLogger(__name__)
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -78,7 +75,20 @@ settings = get_settings()
 
 app = FastAPI(
     lifespan=lifespan,
+    title="WB Service API",
+    description="API для корпоративного портала: уведомления, новости, профиль сотрудника",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
 )
+
+swagger_dark_ui(
+    app=app,
+    dark_mode=True,
+    logo_url="https://via.placeholder.com/150",
+)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
