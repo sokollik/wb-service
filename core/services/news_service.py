@@ -5,12 +5,14 @@ from typing import Optional
 from pydantic.json import pydantic_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.common.common_exc import NotFoundHttpException
+from core.common.common_exc import NotAllowedHttpException, NotFoundHttpException
 from core.common.common_repo import CommonRepository
 from core.models.enums import NewsStatus, ProfileOperationType
+from core.models.emploee import EmployeeOrm
 from core.models.news import (
     CategoryOrm,
     NewsAcknowledgementOrm,
+    NewsAcknowledgementTargetOrm,
     NewsChangeLogOrm,
     NewsLikeOrm,
     NewsOrm,
@@ -87,6 +89,7 @@ class NewsService:
                 author_id=author_id,
                 is_pinned=data.is_pinned,
                 mandatory_ack=data.mandatory_ack,
+                ack_target_all=data.ack_target_all,
                 comments_enabled=data.comments_enabled,
                 status=status,
                 scheduled_publish_at=data.scheduled_publish_at,
@@ -168,6 +171,27 @@ class NewsService:
                 operation=ProfileOperationType.CREATE,
             )
 
+        if data.mandatory_ack and not data.ack_target_all:
+            target_eids = await self._resolve_ack_targets(
+                data.ack_target_eids, data.ack_target_org_unit_ids
+            )
+            if target_eids:
+                target_links = [
+                    NewsAcknowledgementTargetOrm(
+                        news_id=new_news.id, user_eid=eid
+                    )
+                    for eid in target_eids
+                ]
+                await self.common_repo.add_all(target_links)
+                await self._log_news_change(
+                    news_id=new_news.id,
+                    changed_by_eid=author_id,
+                    field_name="ack_targets",
+                    old_value=None,
+                    new_value=target_eids,
+                    operation=ProfileOperationType.CREATE,
+                )
+
         await self.common_repo.session.commit()
         return new_news.id
 
@@ -184,6 +208,8 @@ class NewsService:
         tag_names = update_data.pop("tag_names", None)
         file_ids = update_data.pop("file_ids", None)
         category_ids = update_data.pop("category_ids", None)
+        ack_target_eids = update_data.pop("ack_target_eids", None)
+        ack_target_org_unit_ids = update_data.pop("ack_target_org_unit_ids", None)
 
         if update_data:
             for field_name, new_value in update_data.items():
@@ -276,6 +302,39 @@ class NewsService:
                 field_name="files",
                 old_value=old_file_ids,
                 new_value=file_ids,
+                operation=ProfileOperationType.UPDATE,
+            )
+
+        if ack_target_eids is not None or ack_target_org_unit_ids is not None:
+            old_targets = await self.common_repo.get_all_scalars(
+                NewsAcknowledgementTargetOrm,
+                where_stmt=(NewsAcknowledgementTargetOrm.news_id == news_id),
+            )
+            old_target_eids = [t.user_eid for t in old_targets]
+
+            await self.common_repo.delete(
+                NewsAcknowledgementTargetOrm,
+                (NewsAcknowledgementTargetOrm.news_id == news_id),
+            )
+
+            new_target_eids = await self._resolve_ack_targets(
+                ack_target_eids or [], ack_target_org_unit_ids or []
+            )
+            if new_target_eids:
+                new_targets = [
+                    NewsAcknowledgementTargetOrm(
+                        news_id=news_id, user_eid=eid
+                    )
+                    for eid in new_target_eids
+                ]
+                await self.common_repo.add_all(new_targets)
+
+            await self._log_news_change(
+                news_id=news_id,
+                changed_by_eid=user_eid,
+                field_name="ack_targets",
+                old_value=old_target_eids,
+                new_value=new_target_eids,
                 operation=ProfileOperationType.UPDATE,
             )
 
@@ -425,6 +484,17 @@ class NewsService:
         if not news:
             raise NotFoundHttpException(name="news")
 
+        if news.mandatory_ack and not news.ack_target_all:
+            target = await self.common_repo.get_one(
+                from_table=NewsAcknowledgementTargetOrm,
+                where_stmt=(
+                    (NewsAcknowledgementTargetOrm.news_id == news_id),
+                    (NewsAcknowledgementTargetOrm.user_eid == user_eid),
+                ),
+            )
+            if not target:
+                raise NotAllowedHttpException(name="acknowledge")
+
         existing = await self.common_repo.get_one(
             from_table=NewsAcknowledgementOrm,
             where_stmt=(
@@ -440,14 +510,81 @@ class NewsService:
         )
 
     async def get_acknowledgements(self, news_id: int):
+        news = await self.common_repo.get_one(
+            from_table=NewsOrm, where_stmt=(NewsOrm.id == news_id)
+        )
+        if not news:
+            raise NotFoundHttpException(name="news")
+
         acks = await self.common_repo.get_all_scalars(
             NewsAcknowledgementOrm,
             where_stmt=(NewsAcknowledgementOrm.news_id == news_id),
         )
-        return [
-            {"user_eid": a.user_eid, "acknowledged_at": a.acknowledged_at}
-            for a in acks
-        ]
+        ack_map = {a.user_eid: a.acknowledged_at for a in acks}
+
+        if news.mandatory_ack and not news.ack_target_all:
+            targets = await self.common_repo.get_all_scalars(
+                NewsAcknowledgementTargetOrm,
+                where_stmt=(NewsAcknowledgementTargetOrm.news_id == news_id),
+            )
+            result_targets = []
+            for t in targets:
+                emp = await self.common_repo.get_one(
+                    from_table=EmployeeOrm,
+                    where_stmt=(EmployeeOrm.eid == t.user_eid),
+                )
+                result_targets.append({
+                    "user_eid": t.user_eid,
+                    "full_name": emp.full_name if emp else "",
+                    "acknowledged": t.user_eid in ack_map,
+                    "acknowledged_at": ack_map.get(t.user_eid),
+                })
+            return {
+                "news_id": news_id,
+                "ack_target_all": False,
+                "total_targets": len(targets),
+                "acknowledged_count": sum(
+                    1 for t in targets if t.user_eid in ack_map
+                ),
+                "targets": result_targets,
+            }
+        else:
+            ack_targets = []
+            for user_eid, acknowledged_at in ack_map.items():
+                emp = await self.common_repo.get_one(
+                    from_table=EmployeeOrm,
+                    where_stmt=(EmployeeOrm.eid == user_eid),
+                )
+                ack_targets.append({
+                    "user_eid": user_eid,
+                    "full_name": emp.full_name if emp else "",
+                    "acknowledged": True,
+                    "acknowledged_at": acknowledged_at,
+                })
+            return {
+                "news_id": news_id,
+                "ack_target_all": True,
+                "total_targets": -1,
+                "acknowledged_count": len(acks),
+                "targets": ack_targets,
+            }
+
+    async def _resolve_ack_targets(
+        self,
+        ack_target_eids: list[str],
+        ack_target_org_unit_ids: list[int],
+    ) -> list[str]:
+        all_eids = set(ack_target_eids)
+        if ack_target_org_unit_ids:
+            employees = await self.common_repo.get_all_scalars(
+                EmployeeOrm,
+                where_stmt=(
+                    EmployeeOrm.organization_unit.in_(ack_target_org_unit_ids),
+                    EmployeeOrm.is_fired == False,
+                ),
+            )
+            all_eids.update(e.eid for e in employees)
+        return list(all_eids)
 
     async def _log_news_change(
         self,

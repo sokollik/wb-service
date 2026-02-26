@@ -9,6 +9,11 @@ class AuthorSchema(BaseModel):
     full_name: str = Field(...)
 
 
+class MentionedUserSchema(BaseModel):
+    eid: str
+    full_name: str
+
+
 class CommentSchema(BaseModel):
     id: int = Field(...)
     parent_id: int | None = Field(None)
@@ -17,6 +22,7 @@ class CommentSchema(BaseModel):
     created_at: datetime = Field(...)
     is_edited: bool = Field(...)
     file_ids: List[int] | None = Field(None)
+    mentioned_users: List[MentionedUserSchema] = Field([])
 
     likes_count: int = Field(...)
     is_liked: bool = Field(False)

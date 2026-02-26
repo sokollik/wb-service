@@ -4,7 +4,7 @@ from sqlalchemy import Boolean, case, desc, exists, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.models.emploee import EmployeeOrm
-from core.models.news import CommentLikeOrm, CommentOrm, CommentToFileOrm
+from core.models.news import CommentLikeOrm, CommentOrm, CommentToFileOrm, MentionOrm
 
 
 class CommentRepository:
@@ -35,6 +35,21 @@ class CommentRepository:
                 func.count(CommentLikeOrm.user_id).label("likes_count"),
             )
             .group_by(CommentLikeOrm.comment_id)
+            .subquery()
+        )
+
+        mentions_subq = (
+            select(
+                MentionOrm.comment_id,
+                func.json_agg(
+                    func.json_build_object(
+                        "eid", EmployeeOrm.eid,
+                        "full_name", EmployeeOrm.full_name,
+                    )
+                ).label("mentioned_users"),
+            )
+            .join(EmployeeOrm, MentionOrm.mentioned_user_id == EmployeeOrm.eid)
+            .group_by(MentionOrm.comment_id)
             .subquery()
         )
 
@@ -72,11 +87,15 @@ class CommentRepository:
                 func.coalesce(
                     files_subq.c.file_ids, func.json_build_array()
                 ).label("file_ids"),
+                func.coalesce(
+                    mentions_subq.c.mentioned_users, func.json_build_array()
+                ).label("mentioned_users"),
                 is_liked_expr,
             )
             .join(EmployeeOrm, CommentOrm.author_id == EmployeeOrm.eid)
             .outerjoin(likes_subq, CommentOrm.id == likes_subq.c.comment_id)
             .outerjoin(files_subq, CommentOrm.id == files_subq.c.comment_id)
+            .outerjoin(mentions_subq, CommentOrm.id == mentions_subq.c.comment_id)
             .where(CommentOrm.news_id == news_id)
         )
 

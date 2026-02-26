@@ -20,6 +20,7 @@ from core.models.news import (
     CategoryOrm,
     CommentOrm,
     NewsAcknowledgementOrm,
+    NewsAcknowledgementTargetOrm,
     NewsLikeOrm,
     NewsOrm,
     NewsTagOrm,
@@ -312,6 +313,38 @@ class NewsRepository:
             else func.cast(False, Boolean).label("is_acknowledged")
         )
 
+        must_acknowledge_expr = (
+            case(
+                (
+                    NewsOrm.mandatory_ack == True,
+                    case(
+                        (NewsOrm.ack_target_all == True, True),
+                        (
+                            exists(
+                                select(
+                                    NewsAcknowledgementTargetOrm.user_eid
+                                ).where(
+                                    (
+                                        NewsAcknowledgementTargetOrm.news_id
+                                        == news_id
+                                    )
+                                    & (
+                                        NewsAcknowledgementTargetOrm.user_eid
+                                        == user_eid
+                                    )
+                                )
+                            ),
+                            True,
+                        ),
+                        else_=False,
+                    ),
+                ),
+                else_=False,
+            ).label("must_acknowledge")
+            if user_eid
+            else func.cast(False, Boolean).label("must_acknowledge")
+        )
+
         query = (
             select(
                 NewsOrm.id,
@@ -321,6 +354,7 @@ class NewsRepository:
                 NewsOrm.published_at,
                 NewsOrm.is_pinned,
                 NewsOrm.mandatory_ack,
+                NewsOrm.ack_target_all,
                 NewsOrm.comments_enabled,
                 NewsOrm.scheduled_publish_at,
                 NewsOrm.views_count,
@@ -339,6 +373,7 @@ class NewsRepository:
                 ),
                 is_liked_expr,
                 is_acknowledged_expr,
+                must_acknowledge_expr,
             )
             .outerjoin(tags_subq, tags_subq.c.news_id == NewsOrm.id)
             .join(EmployeeOrm, EmployeeOrm.eid == NewsOrm.author_id)

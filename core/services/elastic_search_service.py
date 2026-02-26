@@ -290,27 +290,31 @@ class EmployeeElasticsearchService:
             return {"total": 0, "results": [], "error": str(e)}
 
     def suggest_employees(self, query: str, size: int = 10):
-        if not query or len(query) < 1:
-            return []
-
-        search_query = {
-            "bool": {
-                "must": [
-                    {
-                        "multi_match": {
-                            "query": query,
-                            "fields": [
-                                "full_name.autocomplete^2",
-                                "full_name",
-                            ],
-                            "type": "best_fields",
-                            "operator": "or",
+        if query and query.strip():
+            search_query = {
+                "bool": {
+                    "must": [
+                        {
+                            "multi_match": {
+                                "query": query,
+                                "fields": [
+                                    "full_name.autocomplete^2",
+                                    "full_name",
+                                ],
+                                "type": "best_fields",
+                                "operator": "or",
+                            }
                         }
-                    }
-                ],
-                "filter": [{"term": {"is_fired": False}}],
+                    ],
+                    "filter": [{"term": {"is_fired": False}}],
+                }
             }
-        }
+        else:
+            search_query = {
+                "bool": {
+                    "filter": [{"term": {"is_fired": False}}],
+                }
+            }
 
         try:
             result = self.es.search(

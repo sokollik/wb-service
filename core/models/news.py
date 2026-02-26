@@ -26,6 +26,7 @@ class NewsOrm(Base):
 
     is_pinned = Column(Boolean, default=False, index=True)
     mandatory_ack = Column(Boolean, default=False)
+    ack_target_all = Column(Boolean, default=True, nullable=False)
 
     status = Column(Enum(NewsStatus), nullable=False, default=NewsStatus.DRAFT)
     comments_enabled = Column(Boolean, default=True, nullable=False)
@@ -292,4 +293,19 @@ class NewsAcknowledgementOrm(Base):
         DateTime,
         nullable=False,
         server_default=func.now(),
+    )
+
+
+class NewsAcknowledgementTargetOrm(Base):
+    __tablename__ = "news_acknowledgement_targets"
+
+    news_id = Column(
+        BigInteger,
+        ForeignKey("news.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    user_eid = Column(
+        String,
+        ForeignKey("employee.eid"),
+        primary_key=True,
     )
