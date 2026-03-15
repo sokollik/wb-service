@@ -52,6 +52,7 @@ start-dev:
 	@echo "Waiting for Keycloak setup to complete..."
 	@$(SLEEP) 30
 	@make keycloak-info
+	docker compose -f docker-compose.yaml up -d minio minio-setup
 
 ## Перезагрузка API с новыми ключами из .env
 reload-api:

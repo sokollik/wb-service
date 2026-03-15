@@ -5,10 +5,13 @@ from typing import Optional
 from pydantic.json import pydantic_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.common.common_exc import NotAllowedHttpException, NotFoundHttpException
+from core.common.common_exc import (
+    NotAllowedHttpException,
+    NotFoundHttpException,
+)
 from core.common.common_repo import CommonRepository
-from core.models.enums import NewsStatus, ProfileOperationType
 from core.models.emploee import EmployeeOrm
+from core.models.enums import NewsStatus, ProfileOperationType
 from core.models.news import (
     CategoryOrm,
     NewsAcknowledgementOrm,
@@ -192,7 +195,6 @@ class NewsService:
                     operation=ProfileOperationType.CREATE,
                 )
 
-        await self.common_repo.session.commit()
         return new_news.id
 
     async def update_news(
@@ -209,7 +211,9 @@ class NewsService:
         file_ids = update_data.pop("file_ids", None)
         category_ids = update_data.pop("category_ids", None)
         ack_target_eids = update_data.pop("ack_target_eids", None)
-        ack_target_org_unit_ids = update_data.pop("ack_target_org_unit_ids", None)
+        ack_target_org_unit_ids = update_data.pop(
+            "ack_target_org_unit_ids", None
+        )
 
         if update_data:
             for field_name, new_value in update_data.items():
@@ -322,9 +326,7 @@ class NewsService:
             )
             if new_target_eids:
                 new_targets = [
-                    NewsAcknowledgementTargetOrm(
-                        news_id=news_id, user_eid=eid
-                    )
+                    NewsAcknowledgementTargetOrm(news_id=news_id, user_eid=eid)
                     for eid in new_target_eids
                 ]
                 await self.common_repo.add_all(new_targets)
@@ -533,12 +535,14 @@ class NewsService:
                     from_table=EmployeeOrm,
                     where_stmt=(EmployeeOrm.eid == t.user_eid),
                 )
-                result_targets.append({
-                    "user_eid": t.user_eid,
-                    "full_name": emp.full_name if emp else "",
-                    "acknowledged": t.user_eid in ack_map,
-                    "acknowledged_at": ack_map.get(t.user_eid),
-                })
+                result_targets.append(
+                    {
+                        "user_eid": t.user_eid,
+                        "full_name": emp.full_name if emp else "",
+                        "acknowledged": t.user_eid in ack_map,
+                        "acknowledged_at": ack_map.get(t.user_eid),
+                    }
+                )
             return {
                 "news_id": news_id,
                 "ack_target_all": False,
@@ -555,12 +559,14 @@ class NewsService:
                     from_table=EmployeeOrm,
                     where_stmt=(EmployeeOrm.eid == user_eid),
                 )
-                ack_targets.append({
-                    "user_eid": user_eid,
-                    "full_name": emp.full_name if emp else "",
-                    "acknowledged": True,
-                    "acknowledged_at": acknowledged_at,
-                })
+                ack_targets.append(
+                    {
+                        "user_eid": user_eid,
+                        "full_name": emp.full_name if emp else "",
+                        "acknowledged": True,
+                        "acknowledged_at": acknowledged_at,
+                    }
+                )
             return {
                 "news_id": news_id,
                 "ack_target_all": True,

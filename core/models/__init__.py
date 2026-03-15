@@ -5,3 +5,4 @@ from .notification import *
 from .org_structure import *
 from .profile import *
 from .static import *
+from .document import *
