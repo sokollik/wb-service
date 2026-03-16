@@ -2,6 +2,8 @@ from fastapi import APIRouter
 
 from core.api.v1.birthday_controller import birthday_controller
 from core.api.v1.comment_controller import comment_controller
+from core.api.v1.news_controller import news_router
+from core.api.v1.notification_controller import notification_router
 from core.api.v1.org_structure_controller import org_structure_controller
 from core.api.v1.profile_controller import profile_controller
 from core.api.v1.static_controller import static_router
@@ -24,7 +26,6 @@ v1_router.include_router(
 v1_router.include_router(
     comment_controller, prefix="/comments", tags=["Comments"]
 )
-
 v1_router.include_router(
     news_router, prefix="/news", tags=["News"]
 )
@@ -35,4 +36,6 @@ v1_router.include_router(
 
 v1_router.include_router(
     document_router, prefix="/documents", tags=["Documents"]
+v1_router.include_router(
+    notification_router, prefix="/notifications", tags=["Notifications"]
 )
