@@ -156,12 +156,44 @@ services:
           fi
         fi
 
+  minio:
+    image: minio/minio:RELEASE.2024-01-18T22-51-28Z
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    env_file:
+      - .env
+    volumes:
+      - minio-data:/data
+    networks:
+      - wb_network
+
+  minio-setup:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        sleep 3
+        mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD}
+        mc mb --ignore-existing local/files
+        echo "Bucket 'files' created"
+    env_file:
+      - .env
+    networks:
+      - wb_network
+
 volumes:
   data:
     driver: local
   elasticsearch_data:
     driver: local
   keycloak_db_data:
+    driver: local
+  minio-data:
     driver: local
 
 networks:

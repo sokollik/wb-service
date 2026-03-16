@@ -151,7 +151,7 @@ class ProfileController:
     @exception_handler
     async def suggest_employees(
         self,
-        q: str = Query(..., min_length=2, description="Начало поиска по ФИО"),
+        q: str = Query("", description="Начало поиска по ФИО"),
         size: int = Query(10, ge=1, le=50, description="Количество подсказок"),
         _current_user: CurrentUser = Depends(
             require_roles(["employee", "hr", "admin", "news_editor"])

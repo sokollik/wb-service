@@ -48,6 +48,12 @@ class Settings(BaseSettings):
 
     API_KEY_1C: str = os.getenv("API_KEY_1C", "")
 
+    MINIO_ENDPOINT: str = os.getenv("MINIO_ENDPOINT", "http://minio:9000")
+    MINIO_EXTERNAL_ENDPOINT: str = os.getenv("MINIO_EXTERNAL_ENDPOINT", "")
+    MINIO_ACCESS_KEY: str = os.getenv("MINIO_ACCESS_KEY", "")
+    MINIO_SECRET_KEY: str = os.getenv("MINIO_SECRET_KEY", "")
+    MINIO_BUCKET: str = os.getenv("MINIO_BUCKET", "files")
+
     SCHEDULED_NEWS_CHECK_INTERVAL: int = int(
         os.getenv("SCHEDULED_NEWS_CHECK_INTERVAL", "60")
     )

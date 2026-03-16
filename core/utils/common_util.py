@@ -1,5 +1,7 @@
 from functools import wraps
+
 from fastapi import HTTPException
+
 from core.common.common_exc import IntervalServerErrorHttpException
 
 

@@ -7,6 +7,9 @@ from core.api.v1.notification_controller import notification_router
 from core.api.v1.org_structure_controller import org_structure_controller
 from core.api.v1.profile_controller import profile_controller
 from core.api.v1.static_controller import static_router
+from core.api.v1.document_controller import document_router
+from core.api.v1.folder_controller import folder_router
+from core.api.v1.news_controller import news_router
 
 v1_router = APIRouter(prefix="/api/v1")
 
@@ -26,6 +29,13 @@ v1_router.include_router(
 v1_router.include_router(
     news_router, prefix="/news", tags=["News"]
 )
+
+v1_router.include_router(
+    folder_router, prefix="/folders", tags=["Folders"]
+)
+
+v1_router.include_router(
+    document_router, prefix="/documents", tags=["Documents"]
 v1_router.include_router(
     notification_router, prefix="/notifications", tags=["Notifications"]
 )

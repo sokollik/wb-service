@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.api.deps import CurrentUser, require_roles
 from core.models.enums import NewsStatus
 from core.schemas.news_schema import (
+    AcknowledgementStatusSchema,
     CategoryCreateSchema,
     CategorySchema,
     NewsCreateSchema,
@@ -223,7 +224,10 @@ class NewsController:
             news_id=news_id, user_eid=current_user.eid
         )
 
-    @news_router.get("/{news_id}/acknowledgements")
+    @news_router.get(
+        "/{news_id}/acknowledgements",
+        response_model=AcknowledgementStatusSchema,
+    )
     @exception_handler
     async def get_acknowledgements(
         self,
