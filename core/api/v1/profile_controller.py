@@ -170,3 +170,12 @@ class ProfileController:
     ):
         stats = self.es_service.get_index_stats()
         return stats
+
+    @profile_controller.get("/{eid}", summary="Просмотр профиля по EID (для HR/Admin)")
+    @exception_handler
+    async def get_profile_by_eid(
+        self,
+        eid: str,
+        _current_user: CurrentUser = Depends(require_roles(["hr", "admin"])),
+    ) -> ProfileSchema:
+        return await self.profile_service.get_my_profile(eid=eid)
