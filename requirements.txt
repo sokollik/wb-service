@@ -10,7 +10,6 @@ fastapi-restful
 httpx
 ujson
 pydantic_settings
-fastapi_swagger_dark
 psycopg2-binary
 typing_inspect
 email-validator

@@ -8,6 +8,7 @@ from core.common.common_exc import (
     WrongParametersHttpException,
 )
 from core.common.common_repo import CommonRepository
+from core.models.emploee import EmployeeOrm
 from core.models.enums import ProfileOperationType
 from core.models.org_structure import OrgChangeLogOrm, OrgUnitOrm
 from core.repositories.org_structure_repo import OrgStructureRepository
@@ -24,14 +25,15 @@ from core.services.elastic_sync_service import EmployeeSyncService
 
 class OrgStructureService:
 
-    def __init__(self, session: AsyncSession, es_service: EmployeeElasticsearchService):
+    def __init__(
+        self, session: AsyncSession, es_service: EmployeeElasticsearchService
+    ):
         self.session = session
         self.common = CommonRepository(session=self.session)
         self.org_structure_repo = OrgStructureRepository(session=self.session)
         self.es_service = es_service
         self.sync_service = EmployeeSyncService(
-            db_session=self.session,
-            es_service=self.es_service
+            db_session=self.session, es_service=self.es_service
         )
 
     def _map_manager(self, unit_dict: dict) -> dict:
@@ -71,9 +73,13 @@ class OrgStructureService:
 
             elif parent_id in units_by_id:
                 units_by_id[parent_id]["children"].append(unit_dict)
-        return [OrgUnitHierarchySchema.model_validate(unit) for unit in root_units]
+        return [
+            OrgUnitHierarchySchema.model_validate(unit) for unit in root_units
+        ]
 
-    async def move_org_unit(self, unit_id: int, new_parent_id: int | None = None):
+    async def move_org_unit(
+        self, unit_id: int, new_parent_id: int | None = None
+    ):
         if unit_id == new_parent_id:
             raise WrongParametersHttpException(params="new_parent_id")
 
@@ -82,7 +88,9 @@ class OrgStructureService:
             raise NotFoundHttpException(name="org_unit")
 
         if new_parent_id is not None:
-            new_parent = await self.org_structure_repo.get_org_units(id=new_parent_id)
+            new_parent = await self.org_structure_repo.get_org_units(
+                id=new_parent_id
+            )
             if not new_parent:
                 raise NotFoundHttpException(name="org_unit")
 
@@ -97,7 +105,7 @@ class OrgStructureService:
             where_stmt=(OrgUnitOrm.id == unit_id),
             values={"parent_id": new_parent_id},
         )
-        
+
         await self.sync_service.sync_all_employees()
 
     async def _log_change(
@@ -112,24 +120,30 @@ class OrgStructureService:
         def to_json(val):
             if isinstance(val, str):
                 return val
-            return json.dumps(val, default=pydantic_encoder, ensure_ascii=False)
+            return json.dumps(
+                val, default=pydantic_encoder, ensure_ascii=False
+            )
 
         await self.common.add(
             OrgChangeLogOrm(
                 org_unit_id=org_unit_id,
                 changed_by_eid=changed_by_eid,
                 field_name=field_name,
-                old_value=to_json(old_value) if old_value is not None else None,
-                new_value=to_json(new_value) if new_value is not None else None,
+                old_value=(
+                    to_json(old_value) if old_value is not None else None
+                ),
+                new_value=(
+                    to_json(new_value) if new_value is not None else None
+                ),
                 operation=operation,
             )
         )
-        
+
     async def create_org_unit(
         self, data: OrgUnitCreateSchema, changed_by_eid: str
     ) -> dict:
         org_unit = OrgUnitOrm(**data.model_dump())
-        
+
         await self.common.add(org_unit)
         await self._log_change(
             org_unit_id=org_unit.id,
@@ -152,7 +166,9 @@ class OrgStructureService:
     async def update_org_unit(
         self, unit_id: int, data: OrgUnitUpdateSchema, changed_by_eid: str
     ) -> None:
-        org_unit = await self.common.get_one(OrgUnitOrm, OrgUnitOrm.id == unit_id)
+        org_unit = await self.common.get_one(
+            OrgUnitOrm, OrgUnitOrm.id == unit_id
+        )
         if not org_unit:
             raise NotFoundHttpException(name="org_unit")
 
@@ -176,7 +192,9 @@ class OrgStructureService:
             )
 
     async def delete_org_unit(self, unit_id: int, changed_by_eid: str) -> None:
-        org_unit = await self.common.get_one(OrgUnitOrm, OrgUnitOrm.id == unit_id)
+        org_unit = await self.common.get_one(
+            OrgUnitOrm, OrgUnitOrm.id == unit_id
+        )
         if not org_unit:
             raise NotFoundHttpException(name="org_unit")
         await self._log_change(
@@ -189,15 +207,42 @@ class OrgStructureService:
                 "parent_id": org_unit.parent_id,
                 "manager_eid": org_unit.manager_eid,
                 "is_temporary": org_unit.is_temporary,
-                "start_date": str(org_unit.start_date) if org_unit.start_date else None,
-                "end_date": str(org_unit.end_date) if org_unit.end_date else None,
+                "start_date": (
+                    str(org_unit.start_date) if org_unit.start_date else None
+                ),
+                "end_date": (
+                    str(org_unit.end_date) if org_unit.end_date else None
+                ),
             },
             new_value=None,
             operation=ProfileOperationType.DELETE,
         )
-        deleted = await self.common.delete(OrgUnitOrm, OrgUnitOrm.id == unit_id)
+
+        await self.common.update_stmt(
+            table=EmployeeOrm,
+            where_stmt=(EmployeeOrm.organization_unit == unit_id),
+            values={"organization_unit": None},
+        )
+
+        await self.common.update_stmt(
+            table=OrgUnitOrm,
+            where_stmt=(OrgUnitOrm.parent_id == unit_id),
+            values={"parent_id": org_unit.parent_id},
+        )
+
+        await self.common.update_stmt(
+            table=OrgChangeLogOrm,
+            where_stmt=(OrgChangeLogOrm.org_unit_id == unit_id),
+            values={"org_unit_id": None},
+        )
+
+        deleted = await self.common.delete(
+            OrgUnitOrm, OrgUnitOrm.id == unit_id
+        )
         if not deleted:
             raise NotFoundHttpException(name="org_unit")
+
+        await self.sync_service.sync_all_employees()
         return None
 
     async def get_org_unit_edit_log(self, unit_id: int):
@@ -232,7 +277,9 @@ class OrgStructureService:
     async def set_manager(
         self, unit_id: int, manager_eid: str, changed_by_eid: str
     ) -> OrgUnitBaseSchema:
-        org_unit = await self.common.get_one(OrgUnitOrm, OrgUnitOrm.id == unit_id)
+        org_unit = await self.common.get_one(
+            OrgUnitOrm, OrgUnitOrm.id == unit_id
+        )
         if not org_unit:
             raise NotFoundHttpException(name="org_unit")
 
