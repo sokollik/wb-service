@@ -29,7 +29,7 @@ class FolderController:
     async def get_children(
         self,
         _current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin"])
+            require_roles(["employee", "hr", "admin", "news_editor"])
         ),
         parent_id: Optional[int] = Query(None),
     ):
@@ -40,7 +40,7 @@ class FolderController:
     async def get_tree(
         self,
         _current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin"])
+            require_roles(["employee", "hr", "admin", "news_editor"])
         ),
         root_id: Optional[int] = Query(None),
     ):
@@ -52,7 +52,7 @@ class FolderController:
         self,
         folder_id: int,
         _current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin"])
+            require_roles(["employee", "hr", "admin", "news_editor"])
         ),
     ):
         return await self.folder_service.get_folder(folder_id)

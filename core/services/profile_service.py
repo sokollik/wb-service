@@ -43,6 +43,29 @@ class ProfileService:
             raise NotFoundHttpException(name="profile")
         return profiles[0]
 
+    async def get_profile_by_eid(
+        self,
+        target_eid: str,
+        viewer_eid: str,
+        viewer_roles: list[str],
+    ):
+        profiles = await self.profile_repo.get_profile(eid=target_eid)
+        if not profiles:
+            raise NotFoundHttpException(name="profile")
+        profile = dict(profiles[0])
+
+        if "hr" not in viewer_roles and "admin" not in viewer_roles:
+            if viewer_eid == target_eid:
+                can_see_phone = True
+            else:
+                can_see_phone = await self.profile_repo.are_in_same_unit(
+                    viewer_eid, target_eid
+                )
+            if not can_see_phone:
+                profile["personal_phone"] = None
+
+        return profile
+
     async def get_profiles_list(
         self,
         eid: Optional[str] = None,

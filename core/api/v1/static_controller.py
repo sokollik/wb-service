@@ -45,7 +45,7 @@ class StaticController:
         self,
         file: UploadFile,
         data: UploadSchema = Depends(),
-        current_user: CurrentUser = Depends(require_roles(["employee"])),
+        current_user: CurrentUser = Depends(require_roles(["employee", "hr", "admin", "news_editor"])),
     ) -> int:
         """
         info:
@@ -79,7 +79,7 @@ class StaticController:
     async def static_get(
         self,
         id: int,
-        _current_user: CurrentUser = Depends(require_roles(["employee"])),
+        _current_user: CurrentUser = Depends(require_roles(["employee", "hr", "admin", "news_editor"])),
     ) -> FileResponse:
         """
         info:
@@ -95,7 +95,7 @@ class StaticController:
     async def static_delete(
         self,
         id: int,
-        current_user: CurrentUser = Depends(require_roles(["employee"])),
+        current_user: CurrentUser = Depends(require_roles(["employee", "hr", "admin", "news_editor"])),
     ):
         """
         info:

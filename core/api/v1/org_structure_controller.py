@@ -51,7 +51,7 @@ class OrgStructureController:
         self,
         unit_id: int,
         new_parent_id: int | None = None,
-        _current_user: CurrentUser = Depends(require_roles(["admin"])),
+        _current_user: CurrentUser = Depends(require_roles(["admin", "hr"])),
     ):
         return await self.org_structure_service.move_org_unit(
             unit_id=unit_id, new_parent_id=new_parent_id
@@ -64,7 +64,7 @@ class OrgStructureController:
     async def create_org_unit(
         self,
         data: OrgUnitCreateSchema,
-        current_user: CurrentUser = Depends(require_roles(["admin"])),
+        current_user: CurrentUser = Depends(require_roles(["admin", "hr"])),
     ):
         return await self.org_structure_service.create_org_unit(
             data, current_user.eid
@@ -105,7 +105,7 @@ class OrgStructureController:
     async def delete_org_unit(
         self,
         unit_id: int,
-        current_user: CurrentUser = Depends(require_roles(["admin"])),
+        current_user: CurrentUser = Depends(require_roles(["admin", "hr"])),
     ):
         await self.org_structure_service.delete_org_unit(
             unit_id, current_user.eid
@@ -120,7 +120,7 @@ class OrgStructureController:
         self,
         unit_id: int,
         manager_eid: str,
-        current_user: CurrentUser = Depends(require_roles(["admin"])),
+        current_user: CurrentUser = Depends(require_roles(["admin", "hr"])),
     ):
         return await self.org_structure_service.set_manager(
             unit_id, manager_eid, current_user.eid
@@ -133,6 +133,6 @@ class OrgStructureController:
     async def get_org_unit_edit_log(
         self,
         unit_id: int,
-        _current_user: CurrentUser = Depends(require_roles(["admin"])),
+        _current_user: CurrentUser = Depends(require_roles(["admin", "hr"])),
     ) -> list[OrgChangeLogShema]:
         return await self.org_structure_service.get_org_unit_edit_log(unit_id)
