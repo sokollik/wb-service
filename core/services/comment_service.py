@@ -188,8 +188,8 @@ class CommentService:
         )
         if not existing_comment:
             raise NotFoundHttpException(name="comment")
-        is_admin = roles and "admin" in roles
-        if existing_comment.author_id != eid and not is_admin:
+        is_moderator = roles and ("admin" in roles or "news_editor" in roles)
+        if existing_comment.author_id != eid and not is_moderator:
             raise NotAllowedHttpException(name="delete")
 
         await self._log_comment_change(

@@ -31,7 +31,7 @@ class DocumentController:
     async def get_documents(
         self,
         _current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin"])
+            require_roles(["employee", "hr", "admin", "news_editor"])
         ),
         folder_id: Optional[int] = Query(None),
         page: int = Query(1, ge=1),
@@ -48,7 +48,7 @@ class DocumentController:
         self,
         doc_id: int,
         _current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin"])
+            require_roles(["employee", "hr", "admin", "news_editor"])
         ),
     ):
         return await self.document_service.get_document(doc_id)
@@ -59,7 +59,7 @@ class DocumentController:
         self,
         doc_id: int,
         _current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin"])
+            require_roles(["employee", "hr", "admin", "news_editor"])
         ),
     ):
         url = await self.document_service.generate_presigned_url(
