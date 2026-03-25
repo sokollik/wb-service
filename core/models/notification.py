@@ -13,7 +13,7 @@ class NotificationOrm(Base):
         primary_key=True,
     )
     user_eid = Column(
-        sa.BigInteger,
+        sa.String,
         ForeignKey("employee.eid", ondelete="CASCADE"),
         unique=True,
         nullable=False,
@@ -57,7 +57,7 @@ class NotificationPreferencesOrm(Base):
         primary_key=True,
     )
     user_eid = Column(
-        sa.BigInteger,
+        sa.String,
         ForeignKey("employee.eid", ondelete="CASCADE"),
         unique=True,
         nullable=False,

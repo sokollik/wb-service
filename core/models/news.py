@@ -11,7 +11,7 @@ from sqlalchemy import (
 from sqlalchemy.sql import func
 
 from core.models.base import Base
-from core.models.enums import NewsStatus
+from core.models.enums import NewsStatus, ProfileOperationType
 
 
 class NewsOrm(Base):
@@ -22,16 +22,17 @@ class NewsOrm(Base):
     short_description = Column(String, nullable=False)
     content = Column(Text, nullable=False)
 
-    author_id = Column(
-        BigInteger, ForeignKey("employee.eid"), nullable=False, index=True
-    )
+    author_id = Column(String, ForeignKey("employee.eid"), nullable=False, index=True)
 
     is_pinned = Column(Boolean, default=False, index=True)
     mandatory_ack = Column(Boolean, default=False)
+    ack_target_all = Column(Boolean, default=True, nullable=False)
 
     status = Column(Enum(NewsStatus), nullable=False, default=NewsStatus.DRAFT)
+    comments_enabled = Column(Boolean, default=True, nullable=False)
 
     published_at = Column(DateTime, server_default=func.now(), index=True)
+    scheduled_publish_at = Column(DateTime, nullable=True, index=True)
     expires_at = Column(DateTime, nullable=True)
     views_count = Column(BigInteger, default=0)
 
@@ -56,7 +57,7 @@ class CategoryOrm(Base):
 
 class UserFollowedCategoryOrm(Base):
     __tablename__ = "user_followed_categories"
-    user_eid = Column(BigInteger, ForeignKey("employee.eid"), primary_key=True)
+    user_eid = Column(String, ForeignKey("employee.eid"), primary_key=True)
     category_id = Column(
         BigInteger,
         ForeignKey("categories.id", ondelete="CASCADE"),
@@ -107,7 +108,7 @@ class CommentOrm(Base):
         nullable=False,
         index=True,
     )
-    author_id = Column(BigInteger, ForeignKey("employee.eid"), nullable=False)
+    author_id = Column(String, ForeignKey("employee.eid"), nullable=False)
     parent_id = Column(
         BigInteger,
         ForeignKey("comments.id", ondelete="CASCADE"),
@@ -139,7 +140,7 @@ class CommentToFileOrm(Base):
 
 class NewsLikeOrm(Base):
     __tablename__ = "news_likes"
-    user_id = Column(BigInteger, ForeignKey("employee.eid"), primary_key=True)
+    user_id = Column(String, ForeignKey("employee.eid"), primary_key=True)
     news_id = Column(
         BigInteger, ForeignKey("news.id", ondelete="CASCADE"), primary_key=True
     )
@@ -147,7 +148,7 @@ class NewsLikeOrm(Base):
 
 class CommentLikeOrm(Base):
     __tablename__ = "comments_likes"
-    user_id = Column(BigInteger, ForeignKey("employee.eid"), primary_key=True)
+    user_id = Column(String, ForeignKey("employee.eid"), primary_key=True)
     comment_id = Column(
         BigInteger,
         ForeignKey("comments.id", ondelete="CASCADE"),
@@ -163,6 +164,148 @@ class MentionOrm(Base):
         ForeignKey("comments.id", ondelete="CASCADE"),
         nullable=False,
     )
-    mentioned_user_id = Column(
-        BigInteger, ForeignKey("employee.eid"), nullable=False
+    mentioned_user_id = Column(String, ForeignKey("employee.eid"), nullable=False)
+
+
+class NewsChangeLogOrm(Base):
+    __tablename__ = "news_change_log"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True, nullable=False)
+
+    news_id = Column(
+        BigInteger,
+        ForeignKey("news.id", ondelete="CASCADE"),
+        nullable=False,
+        comment="ID новости, которая была изменена",
+    )
+
+    changed_by_eid = Column(
+        String,
+        ForeignKey("employee.eid"),
+        nullable=False,
+        comment="EID сотрудника, который внес изменение",
+    )
+
+    changed_at = Column(
+        DateTime,
+        nullable=False,
+        server_default=func.now(),
+        comment="Дата и время изменения",
+    )
+
+    field_name = Column(
+        String,
+        nullable=False,
+        comment="Название измененного поля",
+    )
+
+    old_value = Column(
+        String,
+        nullable=True,
+        comment="Старое значение (JSON или строка)",
+    )
+
+    new_value = Column(
+        String,
+        nullable=True,
+        comment="Новое значение (JSON или строка)",
+    )
+
+    operation = Column(
+        Enum(ProfileOperationType),
+        nullable=False,
+        comment="Тип операции (CREATE, UPDATE, DELETE)",
+    )
+
+
+class CommentChangeLogOrm(Base):
+    __tablename__ = "comment_change_log"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True, nullable=False)
+
+    comment_id = Column(
+        BigInteger,
+        ForeignKey("comments.id", ondelete="CASCADE"),
+        nullable=False,
+        comment="ID комментария, который был изменен",
+    )
+
+    news_id = Column(
+        BigInteger,
+        ForeignKey("news.id", ondelete="CASCADE"),
+        nullable=False,
+        comment="ID новости, к которой относится комментарий",
+    )
+
+    changed_by_eid = Column(
+        String,
+        ForeignKey("employee.eid"),
+        nullable=False,
+        comment="EID сотрудника, который внес изменение",
+    )
+
+    changed_at = Column(
+        DateTime,
+        nullable=False,
+        server_default=func.now(),
+        comment="Дата и время изменения",
+    )
+
+    field_name = Column(
+        String,
+        nullable=False,
+        comment="Название измененного поля",
+    )
+
+    old_value = Column(
+        String,
+        nullable=True,
+        comment="Старое значение (JSON или строка)",
+    )
+
+    new_value = Column(
+        String,
+        nullable=True,
+        comment="Новое значение (JSON или строка)",
+    )
+
+    operation = Column(
+        Enum(ProfileOperationType),
+        nullable=False,
+        comment="Тип операции (CREATE, UPDATE, DELETE)",
+    )
+
+
+class NewsAcknowledgementOrm(Base):
+    __tablename__ = "news_acknowledgements"
+
+    news_id = Column(
+        BigInteger,
+        ForeignKey("news.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    user_eid = Column(
+        String,
+        ForeignKey("employee.eid"),
+        primary_key=True,
+    )
+    acknowledged_at = Column(
+        DateTime,
+        nullable=False,
+        server_default=func.now(),
+    )
+
+
+class NewsAcknowledgementTargetOrm(Base):
+    __tablename__ = "news_acknowledgement_targets"
+
+    news_id = Column(
+        BigInteger,
+        ForeignKey("news.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    user_eid = Column(
+        String,
+        ForeignKey("employee.eid"),
+        primary_key=True,
     )

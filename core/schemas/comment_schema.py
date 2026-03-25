@@ -5,8 +5,13 @@ from pydantic import BaseModel, Field
 
 
 class AuthorSchema(BaseModel):
-    eid: int = Field(...)
+    eid: str = Field(...)
     full_name: str = Field(...)
+
+
+class MentionedUserSchema(BaseModel):
+    eid: str
+    full_name: str
 
 
 class CommentSchema(BaseModel):
@@ -17,8 +22,10 @@ class CommentSchema(BaseModel):
     created_at: datetime = Field(...)
     is_edited: bool = Field(...)
     file_ids: List[int] | None = Field(None)
+    mentioned_users: List[MentionedUserSchema] = Field([])
 
     likes_count: int = Field(...)
+    is_liked: bool = Field(False)
     replies_count: int = Field(...)
 
     replies: List["CommentSchema"] = Field([])
@@ -33,7 +40,6 @@ class CommentViewSchema(BaseModel):
 
 
 class CommentCreateSchema(BaseModel):
-    author_id: int = Field(..., description="EID автора комментария")
     news_id: int = Field(..., description="ID новости")
     parent_id: int | None = Field(
         None, description="ID родительского комментария"

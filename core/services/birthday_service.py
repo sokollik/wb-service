@@ -50,7 +50,7 @@ class BirthdayService:
 
         return upcoming_birthdays
 
-    async def get_telegram_link_for_birthday(self, eid: int, message: str) -> str:
+    async def get_telegram_link_for_birthday(self, eid: str, message: str) -> str:
         profile = await self.common.get_one(
             ProfileOrm, where_stmt=ProfileOrm.employee_id == eid
         )

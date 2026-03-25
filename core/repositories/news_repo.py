@@ -8,15 +8,19 @@ from sqlalchemy import (
     desc,
     exists,
     func,
+    or_,
     select,
     update,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.models.emploee import EmployeeOrm
+from core.models.enums import NewsStatus
 from core.models.news import (
     CategoryOrm,
     CommentOrm,
+    NewsAcknowledgementOrm,
+    NewsAcknowledgementTargetOrm,
     NewsLikeOrm,
     NewsOrm,
     NewsTagOrm,
@@ -39,8 +43,11 @@ class NewsRepository:
         sort_by: str = "newest",
         limit: int = 15,
         offset: int = 0,
-        user_eid: Optional[int] = None,
+        user_eid: Optional[str] = None,
         likes: Optional[bool] = None,
+        status: Optional[NewsStatus] = None,
+        tag: Optional[str] = None,
+        search: Optional[str] = None,
     ):
         likes_subq = (
             select(
@@ -116,6 +123,7 @@ class NewsRepository:
                 NewsOrm.published_at,
                 NewsOrm.views_count,
                 NewsOrm.is_pinned,
+                NewsOrm.comments_enabled,
                 EmployeeOrm.full_name.label("author_name"),
                 func.coalesce(likes_subq.c.likes_count, 0).label(
                     "likes_count"
@@ -165,6 +173,33 @@ class NewsRepository:
         if date_to:
             query = query.where(NewsOrm.published_at <= date_to)
 
+        # Фильтрация по статусу (по умолчанию только PUBLISHED)
+        if status:
+            query = query.where(NewsOrm.status == status)
+        else:
+            query = query.where(NewsOrm.status == NewsStatus.PUBLISHED)
+
+        # Скрываем истёкшие новости
+        query = query.where(
+            or_(NewsOrm.expires_at.is_(None), NewsOrm.expires_at > func.now())
+        )
+
+        # Фильтрация по тегу
+        if tag:
+            tag_filter_subq = (
+                select(NewsTagOrm.news_id)
+                .join(TagOrm, TagOrm.id == NewsTagOrm.tag_id)
+                .where(TagOrm.name == tag)
+                .subquery()
+            )
+            query = query.join(
+                tag_filter_subq, tag_filter_subq.c.news_id == NewsOrm.id
+            )
+
+        # Поиск по заголовку
+        if search:
+            query = query.where(NewsOrm.title.ilike(f"%{search}%"))
+
         order_params = [desc(NewsOrm.is_pinned)]
         if sort_by == "popular":
             order_params.append(desc(NewsOrm.views_count))
@@ -181,7 +216,7 @@ class NewsRepository:
         return result.mappings().all()
 
     async def get_news_detail(
-        self, news_id: int, user_eid: Optional[int] = None
+        self, news_id: int, user_eid: Optional[str] = None
     ):
         await self.session.execute(
             update(NewsOrm)
@@ -261,6 +296,55 @@ class NewsRepository:
             else func.cast(False, Boolean).label("is_liked")
         )
 
+        is_acknowledged_expr = (
+            case(
+                (
+                    exists(
+                        select(NewsAcknowledgementOrm.user_eid).where(
+                            (NewsAcknowledgementOrm.news_id == news_id)
+                            & (NewsAcknowledgementOrm.user_eid == user_eid)
+                        )
+                    ),
+                    True,
+                ),
+                else_=False,
+            ).label("is_acknowledged")
+            if user_eid
+            else func.cast(False, Boolean).label("is_acknowledged")
+        )
+
+        must_acknowledge_expr = (
+            case(
+                (
+                    NewsOrm.mandatory_ack == True,
+                    case(
+                        (NewsOrm.ack_target_all == True, True),
+                        (
+                            exists(
+                                select(
+                                    NewsAcknowledgementTargetOrm.user_eid
+                                ).where(
+                                    (
+                                        NewsAcknowledgementTargetOrm.news_id
+                                        == news_id
+                                    )
+                                    & (
+                                        NewsAcknowledgementTargetOrm.user_eid
+                                        == user_eid
+                                    )
+                                )
+                            ),
+                            True,
+                        ),
+                        else_=False,
+                    ),
+                ),
+                else_=False,
+            ).label("must_acknowledge")
+            if user_eid
+            else func.cast(False, Boolean).label("must_acknowledge")
+        )
+
         query = (
             select(
                 NewsOrm.id,
@@ -270,6 +354,9 @@ class NewsRepository:
                 NewsOrm.published_at,
                 NewsOrm.is_pinned,
                 NewsOrm.mandatory_ack,
+                NewsOrm.ack_target_all,
+                NewsOrm.comments_enabled,
+                NewsOrm.scheduled_publish_at,
                 NewsOrm.views_count,
                 NewsOrm.status,
                 EmployeeOrm.full_name.label("author_name"),
@@ -285,6 +372,8 @@ class NewsRepository:
                     "categories"
                 ),
                 is_liked_expr,
+                is_acknowledged_expr,
+                must_acknowledge_expr,
             )
             .outerjoin(tags_subq, tags_subq.c.news_id == NewsOrm.id)
             .join(EmployeeOrm, EmployeeOrm.eid == NewsOrm.author_id)
@@ -310,3 +399,19 @@ class NewsRepository:
         self.session.add(category)
         await self.session.flush()
         return category
+
+    async def publish_scheduled_news(self) -> int:
+        """Публикует все новости, у которых наступило время scheduled_publish_at."""
+        result = await self.session.execute(
+            update(NewsOrm)
+            .where(
+                NewsOrm.status == NewsStatus.SCHEDULED,
+                NewsOrm.scheduled_publish_at <= func.now(),
+            )
+            .values(
+                status=NewsStatus.PUBLISHED,
+                published_at=func.now(),
+            )
+        )
+        await self.session.commit()
+        return result.rowcount

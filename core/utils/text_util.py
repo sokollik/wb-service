@@ -1,6 +1,5 @@
 from typing import Dict
 
-
 _mime_to_extension: Dict[str, str] = {
     # Documents
     "vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",

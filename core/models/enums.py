@@ -26,3 +26,10 @@ class NewsStatus(Enum):
     DRAFT = "DRAFT"
     PUBLISHED = "PUBLISHED"
     ARCHIVED = "ARCHIVED"
+    SCHEDULED = "SCHEDULED"
+
+
+class DocumentStatus(Enum):
+    DRAFT = "DRAFT"
+    PUBLISHED = "PUBLISHED"
+    ARCHIVED = "ARCHIVED"

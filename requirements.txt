@@ -10,7 +10,6 @@ fastapi-restful
 httpx
 ujson
 pydantic_settings
-fastapi_swagger_dark
 psycopg2-binary
 typing_inspect
 email-validator
@@ -21,4 +20,6 @@ xlsxwriter
 fastapi-restful==0.6.0
 elasticsearch==8.11.0
 python-jose[cryptography]
+aiobotocore
+types-aiobotocore[s3]
 

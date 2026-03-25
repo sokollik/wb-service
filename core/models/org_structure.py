@@ -36,7 +36,7 @@ class OrgUnitOrm(Base):
     )
 
     manager_eid = Column(
-        BigInteger,
+        String,
         ForeignKey("employee.eid"),
         nullable=True,
         comment="Руководитель данной структурной единицы",
@@ -75,7 +75,7 @@ class OrgChangeLogOrm(Base):
     )
 
     changed_by_eid = Column(
-        sa.BigInteger,
+        sa.String,
         ForeignKey("employee.eid"),
         nullable=False,
         comment="EID сотрудника, который внес изменение",

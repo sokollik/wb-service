@@ -1,6 +1,7 @@
 import json
 from datetime import date
 from io import BytesIO
+from typing import Optional
 
 import pandas as pd
 from fastapi.responses import StreamingResponse
@@ -26,24 +27,70 @@ from core.services.elastic_sync_service import EmployeeSyncService
 class ProfileService:
 
     def __init__(
-        self,
-        session: AsyncSession,
-        es_service: EmployeeElasticsearchService
+        self, session: AsyncSession, es_service: EmployeeElasticsearchService
     ):
         self.session = session
         self.common = CommonRepository(session=self.session)
         self.profile_repo = ProfileRepository(session=self.session)
         self.es_service = es_service
         self.sync_service = EmployeeSyncService(
-            db_session=self.session,
-            es_service=self.es_service
+            db_session=self.session, es_service=self.es_service
         )
 
-    async def get_my_profile(self, eid: int):
+    async def get_my_profile(self, eid: str):
         profiles = await self.profile_repo.get_profile(eid=eid)
         if not profiles:
             raise NotFoundHttpException(name="profile")
         return profiles[0]
+
+    async def get_profile_by_eid(
+        self,
+        target_eid: str,
+        viewer_eid: str,
+        viewer_roles: list[str],
+    ):
+        profiles = await self.profile_repo.get_profile(eid=target_eid)
+        if not profiles:
+            raise NotFoundHttpException(name="profile")
+        profile = dict(profiles[0])
+
+        if "hr" not in viewer_roles and "admin" not in viewer_roles:
+            if viewer_eid == target_eid:
+                can_see_phone = True
+            else:
+                can_see_phone = await self.profile_repo.are_in_same_unit(
+                    viewer_eid, target_eid
+                )
+            if not can_see_phone:
+                profile["personal_phone"] = None
+
+        return profile
+
+    async def get_profiles_list(
+        self,
+        eid: Optional[str] = None,
+        full_name: Optional[str] = None,
+        position: Optional[str] = None,
+        work_email: Optional[str] = None,
+        work_band: Optional[str] = None,
+        is_fired: Optional[bool] = None,
+        hire_date_from: Optional[date] = None,
+        hire_date_to: Optional[date] = None,
+        page: int = 1,
+        size: int = 20,
+    ):
+        return await self.profile_repo.get_profiles_list(
+            eid=eid,
+            full_name=full_name,
+            position=position,
+            work_email=work_email,
+            work_band=work_band,
+            is_fired=is_fired,
+            hire_date_from=hire_date_from,
+            hire_date_to=hire_date_to,
+            page=page,
+            size=size,
+        )
 
     async def _serialize_value(self, value):
         if value is None:
@@ -54,7 +101,7 @@ class ProfileService:
 
     async def update_profile(
         self,
-        eid: int,
+        eid: str,
         profile_data: ProfileUpdateSchema,
     ):
         profile = await self.common.get_one(
@@ -236,7 +283,6 @@ class ProfileService:
                     )
                 )
         await self.sync_service.sync_employee(eid=eid)
-        
 
     def _deserialize_log_value(self, value):
         if value is None:
@@ -248,7 +294,7 @@ class ProfileService:
         except (json.JSONDecodeError, TypeError):
             return value
 
-    async def get_profile_edit_log(self, eid: int):
+    async def get_profile_edit_log(self, eid: str):
         profile = await self.common.get_one(
             ProfileOrm, where_stmt=ProfileOrm.employee_id == eid
         )
@@ -297,8 +343,10 @@ class ProfileService:
 
         raw_data = await self.profile_repo.get_profile()
 
-        requested_fields = config.fields if config.fields else list(FIELD_MAPPING.keys())
-        
+        requested_fields = (
+            config.fields if config.fields else list(FIELD_MAPPING.keys())
+        )
+
         show_projects = "projects" in requested_fields
         show_vacations = "vacations" in requested_fields
 
@@ -308,7 +356,7 @@ class ProfileService:
 
         for row in raw_data:
             current_eid = row["eid"]
-            
+
             entry = {}
             for field in requested_fields:
                 if field in FIELD_MAPPING:
@@ -318,26 +366,42 @@ class ProfileService:
 
             if show_projects and row.get("projects"):
                 for prj in row["projects"]:
-                    projects_list.append({
-                        "EID Сотрудника": current_eid,
-                        "Название": prj.get("name"),
-                        "Роль": prj.get("position"),
-                        "Начало": str(prj.get("start_d")) if prj.get("start_d") else None,
-                        "Конец": str(prj.get("end_d")) if prj.get("end_d") else None,
-                        "Ссылка": prj.get("link")
-                    })
+                    projects_list.append(
+                        {
+                            "EID Сотрудника": current_eid,
+                            "Название": prj.get("name"),
+                            "Роль": prj.get("position"),
+                            "Начало": (
+                                str(prj.get("start_d"))
+                                if prj.get("start_d")
+                                else None
+                            ),
+                            "Конец": (
+                                str(prj.get("end_d"))
+                                if prj.get("end_d")
+                                else None
+                            ),
+                            "Ссылка": prj.get("link"),
+                        }
+                    )
 
             if show_vacations and row.get("vacations"):
                 for vac in row["vacations"]:
-                    vacations_list.append({
-                        "EID Сотрудника": current_eid,
-                        "Начало": str(vac.get("start_date")),
-                        "Конец": str(vac.get("end_date")),
-                        "Планируемый": "Да" if vac.get("is_planned") else "Нет",
-                        "Замещающий": vac.get("substitute"),
-                        "Комментарий": vac.get("comment"),
-                        "Официальный": "Да" if vac.get("is_official") else "Нет"
-                    })
+                    vacations_list.append(
+                        {
+                            "EID Сотрудника": current_eid,
+                            "Начало": str(vac.get("start_date")),
+                            "Конец": str(vac.get("end_date")),
+                            "Планируемый": (
+                                "Да" if vac.get("is_planned") else "Нет"
+                            ),
+                            "Замещающий": vac.get("substitute"),
+                            "Комментарий": vac.get("comment"),
+                            "Официальный": (
+                                "Да" if vac.get("is_official") else "Нет"
+                            ),
+                        }
+                    )
 
         output = BytesIO()
         with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
@@ -347,19 +411,24 @@ class ProfileService:
             if show_projects:
                 df_prj = pd.DataFrame(projects_list)
                 df_prj.to_excel(writer, index=False, sheet_name="Проекты")
-                
+
             if show_vacations:
                 df_vac = pd.DataFrame(vacations_list)
                 df_vac.to_excel(writer, index=False, sheet_name="Отпуска")
 
             workbook = writer.book
-            header_fmt = workbook.add_format({"bold": True, "bg_color": "#B159B0", "border": 1})
-            
+            header_fmt = workbook.add_format(
+                {"bold": True, "bg_color": "#B159B0", "border": 1}
+            )
+
             for sheet_name in writer.sheets:
                 worksheet = writer.sheets[sheet_name]
-                if sheet_name == "Сотрудники": cur_df = df_emp
-                elif sheet_name == "Проекты": cur_df = df_prj
-                else: cur_df = df_vac
+                if sheet_name == "Сотрудники":
+                    cur_df = df_emp
+                elif sheet_name == "Проекты":
+                    cur_df = df_prj
+                else:
+                    cur_df = df_vac
 
                 for col_num, value in enumerate(cur_df.columns.values):
                     worksheet.write(0, col_num, value, header_fmt)
@@ -369,5 +438,7 @@ class ProfileService:
         return StreamingResponse(
             output,
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            headers={"Content-Disposition": 'attachment; filename="export.xlsx"'}
+            headers={
+                "Content-Disposition": 'attachment; filename="export.xlsx"'
+            },
         )

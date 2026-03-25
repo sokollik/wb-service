@@ -1,6 +1,8 @@
+from typing import List
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from typing import List
+
 from core.security.api_key_auth import verify_api_key
 
 router = APIRouter(prefix="/api/v1/1c", tags=["1C Integration"])
