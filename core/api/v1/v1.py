@@ -2,12 +2,18 @@ from fastapi import APIRouter
 
 from core.api.v1.birthday_controller import birthday_controller
 from core.api.v1.comment_controller import comment_controller
+<<<<<<< HEAD
 from core.api.v1.document_controller import document_router
 from core.api.v1.folder_controller import folder_router
+=======
+from core.api.v1.document_ack_controller import document_ack_router
+from core.api.v1.integration_controller import integration_router
+>>>>>>> main
 from core.api.v1.news_controller import news_router
 from core.api.v1.notification_controller import notification_router
 from core.api.v1.org_structure_controller import org_structure_controller
 from core.api.v1.profile_controller import profile_controller
+from core.api.v1.rbac_controller import rbac_router
 from core.api.v1.static_controller import static_router
 
 v1_router = APIRouter(prefix="/api/v1")
@@ -35,3 +41,15 @@ v1_router.include_router(
 v1_router.include_router(
     notification_router, prefix="/notifications", tags=["Notifications"]
 )
+<<<<<<< HEAD
+=======
+v1_router.include_router(
+    rbac_router, prefix="/rbac", tags=["RBAC"]
+)
+v1_router.include_router(
+    document_ack_router, tags=["Document Acknowledgments"]
+)
+v1_router.include_router(
+    integration_router, tags=["Integrations"]
+)
+>>>>>>> main

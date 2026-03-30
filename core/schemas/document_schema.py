@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import List, Optional
+<<<<<<< HEAD
 
 from pydantic import BaseModel, Field, computed_field
 
@@ -23,11 +24,41 @@ class DocumentSchema(BaseModel):
     archive_comment: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+=======
+from pydantic import BaseModel, Field
+
+
+class DocumentBase(BaseModel):
+    name: str
+    original_extension: str
+    original_mime_type: str
+    original_size: int
+
+
+class DocumentCreate(DocumentBase):
+    created_by: str
+
+
+class DocumentResponse(BaseModel):
+    id: int
+    name: str
+    original_extension: str
+    original_mime_type: str
+    original_size: int
+    converted_path: Optional[str] = None
+    converted_at: Optional[datetime] = None
+    conversion_status: Optional[str] = None
+    cache_expires_at: Optional[datetime] = None
+    created_by: str
+    created_at: datetime
+    updated_at: datetime
+>>>>>>> main
 
     class Config:
         from_attributes = True
 
 
+<<<<<<< HEAD
 class DocumentArchiveSchema(BaseModel):
     comment: str = Field(..., min_length=1, max_length=500)
 
@@ -57,11 +88,47 @@ class DocumentVersionSchema(BaseModel):
     @property
     def version_number(self) -> str:
         return f"{self.version_major}.{self.version_minor}"
+=======
+class DocumentStreamResponse(BaseModel):
+    document_id: int
+    file_name: str
+    file_size: int
+    mime_type: str
+    file_type: str
+
+
+class ConversionRequest(BaseModel):
+    document_id: int = Field(..., description="ID документа для конвертации")
+    force: bool = Field(default=False, description="Принудительная конвертация даже при наличии кэша")
+
+
+class ConversionResponse(BaseModel):
+    document_id: int
+    task_id: Optional[str] = None
+    status: str
+    converted_path: Optional[str] = None
+    error_message: Optional[str] = None
+    message: str
+
+
+class DownloadLogResponse(BaseModel):
+    id: int
+    document_id: int
+    user_id: str
+    user_email: Optional[str] = None
+    user_username: Optional[str] = None
+    downloaded_at: datetime
+    file_type: str
+    file_size: int
+    user_agent: Optional[str] = None
+    ip_address: Optional[str] = None
+>>>>>>> main
 
     class Config:
         from_attributes = True
 
 
+<<<<<<< HEAD
 class DocumentSearchResultSchema(BaseModel):
     doc_id: int
     title: str
@@ -79,3 +146,73 @@ class DocumentSearchResponse(BaseModel):
     total: int
     results: List[DocumentSearchResultSchema]
     error: Optional[str] = None
+=======
+class DownloadLogsListResponse(BaseModel):
+    total: int
+    logs: list[DownloadLogResponse]
+
+
+class DocumentViewerConfig(BaseModel):
+    document_id: int
+    file_name: str
+    file_type: str
+    file_url: str
+    total_pages: Optional[int] = None
+    file_size: int
+
+class DocumentAcknowledgmentAssignSchema(BaseModel):
+    employee_eids: List[str] = Field(
+        ...,
+        description="Список EID сотрудников, которые должны ознакомиться",
+        min_length=1
+    )
+    required_at: Optional[datetime] = Field(
+        None,
+        description="Дата/время когда требуется ознакомление (по умолчанию сейчас)"
+    )
+
+
+class DocumentAcknowledgmentSchema(BaseModel):
+    id: int = Field(..., description="ID записи ознакомления")
+    document_id: int = Field(..., description="ID документа")
+    employee_eid: str = Field(..., description="EID сотрудника")
+    required_at: datetime = Field(..., description="Дата требования ознакомления")
+    acknowledged_at: Optional[datetime] = Field(None, description="Дата фактического ознакомления")
+    acknowledged_by: Optional[str] = Field(None, description="EID ознакомившего")
+    created_at: datetime = Field(..., description="Дата создания записи")
+
+    class Config:
+        from_attributes = True
+
+
+class DocumentAcknowledgmentDetailSchema(DocumentAcknowledgmentSchema):
+
+    document_name: str = Field(..., description="Название документа")
+    is_overdue: bool = Field(False, description="Просрочено ли ознакомление")
+
+
+class DocumentAcknowledgmentStatusSchema(BaseModel):
+    employee_eid: str = Field(..., description="EID сотрудника")
+    total_documents: int = Field(..., description="Общее количество документов для ознакомления")
+    acknowledged_count: int = Field(..., description="Количество ознакомленных документов")
+    pending_count: int = Field(..., description="Количество неознакомленных документов")
+    overdue_count: int = Field(..., description="Количество просроченных документов")
+
+
+class DocumentAcknowledgmentListResponse(BaseModel):
+    total: int
+    acknowledgments: List[DocumentAcknowledgmentDetailSchema]
+
+
+class DocumentAcknowledgmentExportSchema(BaseModel):
+    id: int
+    document_id: int
+    document_name: str
+    employee_eid: str
+    employee_full_name: Optional[str] = None
+    required_at: datetime
+    acknowledged_at: Optional[datetime]
+    acknowledged_by: Optional[str]
+    status: str
+    is_overdue: bool
+>>>>>>> main
