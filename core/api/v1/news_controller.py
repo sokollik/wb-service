@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from fastapi_restful.cbv import cbv
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.api.deps import CurrentUser, require_roles
+from core.api.deps import CurrentUser, require_roles, CheckPermissionDep
 from core.models.enums import NewsStatus
 from core.schemas.news_schema import (
     CategoryCreateSchema,
@@ -32,9 +32,7 @@ class NewsController:
     @exception_handler
     async def get_news(
         self,
-        current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin", "news_editor"])
-        ),
+        current_user: CurrentUser = Depends(CheckPermissionDep("news", "read")),
         category_id: Optional[int] = Query(None),
         date_from: Optional[datetime] = Query(None),
         date_to: Optional[datetime] = Query(None),
@@ -64,9 +62,7 @@ class NewsController:
     @exception_handler
     async def get_categories(
         self,
-        _current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin", "news_editor"])
-        ),
+        _current_user: CurrentUser = Depends(CheckPermissionDep("news", "read")),
     ):
         return await self.news_service.get_categories()
 
@@ -75,7 +71,9 @@ class NewsController:
     async def create_category(
         self,
         data: CategoryCreateSchema,
-        _current_user: CurrentUser = Depends(require_roles(["admin"])),
+        _current_user: CurrentUser = Depends(
+            CheckPermissionDep("news", "manage", required_roles=["admin"])
+        ),
     ):
         return await self.news_service.add_category(data)
 
@@ -83,9 +81,7 @@ class NewsController:
     @exception_handler
     async def get_followed_categories(
         self,
-        current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin", "news_editor"])
-        ),
+        current_user: CurrentUser = Depends(CheckPermissionDep("news", "read")),
     ):
         return await self.news_service.get_followed_categories(
             user_eid=current_user.eid
@@ -96,9 +92,7 @@ class NewsController:
     async def follow_category(
         self,
         category_id: int,
-        current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin", "news_editor"])
-        ),
+        current_user: CurrentUser = Depends(CheckPermissionDep("news", "read")),
     ):
         await self.news_service.follow_category(
             category_id=category_id, user_eid=current_user.eid
@@ -109,9 +103,7 @@ class NewsController:
     async def unfollow_category(
         self,
         category_id: int,
-        current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin", "news_editor"])
-        ),
+        current_user: CurrentUser = Depends(CheckPermissionDep("news", "read")),
     ):
         await self.news_service.unfollow_category(
             category_id=category_id, user_eid=current_user.eid
@@ -122,9 +114,7 @@ class NewsController:
     async def get_news_by_id(
         self,
         news_id: int,
-        current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin", "news_editor"])
-        ),
+        current_user: CurrentUser = Depends(CheckPermissionDep("news", "read")),
     ):
         return await self.news_service.get_news_by_id(
             news_id, user_eid=current_user.eid
@@ -136,7 +126,7 @@ class NewsController:
         self,
         data: NewsCreateSchema,
         current_user: CurrentUser = Depends(
-            require_roles(["news_editor", "admin"])
+            CheckPermissionDep("news", "create", required_roles=["admin", "curator"])
         ),
     ):
         return await self.news_service.create_news(
@@ -150,7 +140,7 @@ class NewsController:
         news_id: int,
         data: NewsUpdateSchema,
         current_user: CurrentUser = Depends(
-            require_roles(["news_editor", "admin"])
+            CheckPermissionDep("news", "update", required_roles=["admin", "curator"])
         ),
     ):
         return await self.news_service.update_news(
@@ -163,7 +153,7 @@ class NewsController:
         self,
         news_id: int,
         current_user: CurrentUser = Depends(
-            require_roles(["news_editor", "admin"])
+            CheckPermissionDep("news", "delete", required_roles=["admin", "curator"])
         ),
     ):
         return await self.news_service.delete_news(news_id, current_user.eid)
@@ -173,9 +163,7 @@ class NewsController:
     async def add_like(
         self,
         news_id: int,
-        current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin", "news_editor"])
-        ),
+        current_user: CurrentUser = Depends(CheckPermissionDep("news", "read")),
     ):
         await self.news_service.add_like(news_id=news_id, eid=current_user.eid)
 
@@ -184,9 +172,7 @@ class NewsController:
     async def remove_like(
         self,
         news_id: int,
-        current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin", "news_editor"])
-        ),
+        current_user: CurrentUser = Depends(CheckPermissionDep("news", "read")),
     ):
         await self.news_service.remove_like(
             news_id=news_id, eid=current_user.eid
@@ -197,7 +183,9 @@ class NewsController:
     async def delete_category(
         self,
         category_id: int,
-        current_user: CurrentUser = Depends(require_roles(["admin"])),
+        current_user: CurrentUser = Depends(
+            CheckPermissionDep("news", "manage", required_roles=["admin"])
+        ),
     ):
         await self.news_service.delete_category(category_id)
 
@@ -206,7 +194,9 @@ class NewsController:
     async def get_news_edit_log(
         self,
         news_id: int,
-        current_user: CurrentUser = Depends(require_roles(["admin"])),
+        current_user: CurrentUser = Depends(
+            CheckPermissionDep("news", "manage", required_roles=["admin"])
+        ),
     ):
         return await self.news_service.get_news_edit_log(news_id=news_id)
 
@@ -215,9 +205,7 @@ class NewsController:
     async def acknowledge_news(
         self,
         news_id: int,
-        current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin", "news_editor"])
-        ),
+        current_user: CurrentUser = Depends(CheckPermissionDep("news", "read")),
     ):
         await self.news_service.acknowledge_news(
             news_id=news_id, user_eid=current_user.eid
@@ -228,6 +216,8 @@ class NewsController:
     async def get_acknowledgements(
         self,
         news_id: int,
-        current_user: CurrentUser = Depends(require_roles(["admin"])),
+        current_user: CurrentUser = Depends(
+            CheckPermissionDep("news", "manage", required_roles=["admin"])
+        ),
     ):
         return await self.news_service.get_acknowledgements(news_id=news_id)
