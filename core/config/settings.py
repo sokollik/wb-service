@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     ELASTICSEARCH_INDEX_NAME: str = os.getenv(
         "ELASTICSEARCH_INDEX_NAME", "employee"
     )
+    ELASTICSEARCH_DOCUMENTS_INDEX: str = os.getenv(
+        "ELASTICSEARCH_DOCUMENTS_INDEX", "documents"
+    )
     KEYCLOAK_SERVER_URL: str = os.getenv(
         "KEYCLOAK_SERVER_URL", "http://localhost:8080/auth"
     )
