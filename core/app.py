@@ -3,8 +3,10 @@ import logging
 import sys
 import traceback
 from contextlib import asynccontextmanager
+
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from core.api.v1.v1 import v1_router
 from core.config.settings import get_settings
 from core.services.elastic_sync_service import EmployeeSyncService

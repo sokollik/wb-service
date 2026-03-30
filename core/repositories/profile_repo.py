@@ -128,6 +128,23 @@ class ProfileRepository:
 
         return profile
 
+    async def are_in_same_unit(self, eid_a: str, eid_b: str) -> bool:
+        a_unit = (
+            await self.session.execute(
+                select(EmployeeOrm.organization_unit).where(
+                    EmployeeOrm.eid == eid_a
+                )
+            )
+        ).scalar_one_or_none()
+        b_unit = (
+            await self.session.execute(
+                select(EmployeeOrm.organization_unit).where(
+                    EmployeeOrm.eid == eid_b
+                )
+            )
+        ).scalar_one_or_none()
+        return a_unit is not None and a_unit == b_unit
+
     async def get_profiles_list(
         self,
         eid: Optional[str] = None,
