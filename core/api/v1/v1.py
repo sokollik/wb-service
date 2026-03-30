@@ -32,7 +32,6 @@ v1_router.include_router(folder_router, prefix="/folders", tags=["Folders"])
 v1_router.include_router(
     document_router, prefix="/documents", tags=["Documents"]
 )
-
 v1_router.include_router(
     notification_router, prefix="/notifications", tags=["Notifications"]
 )

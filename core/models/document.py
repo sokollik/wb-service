@@ -1,5 +1,6 @@
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     Column,
     DateTime,
     Enum,
@@ -87,8 +88,6 @@ class DocumentOrm(Base):
         comment="Куратор документа",
     )
 
-    current_version = Column(Integer, nullable=False, default=1)
-
     s3_key = Column(String, nullable=False, comment="UUID-ключ объекта в MinIO")
 
     original_filename = Column(String, nullable=False, comment="Оригинальное имя файла")
@@ -97,6 +96,61 @@ class DocumentOrm(Base):
 
     mime_type = Column(String, nullable=False, comment="MIME-тип файла")
 
+    archived_at = Column(DateTime, nullable=True, comment="Дата архивирования")
+
+    archived_by = Column(
+        String,
+        ForeignKey("employee.eid"),
+        nullable=True,
+        comment="Кто архивировал",
+    )
+
+    archive_comment = Column(String, nullable=True, comment="Основание архивирования")
+
     created_at = Column(DateTime, server_default=func.now())
 
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class DocumentVersionOrm(Base):
+    __tablename__ = "document_versions"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True, nullable=False)
+
+    document_id = Column(
+        BigInteger,
+        ForeignKey("documents.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        comment="Документ, к которому относится версия",
+    )
+
+    version_major = Column(Integer, nullable=False, default=1, comment="Мажорная версия")
+
+    version_minor = Column(Integer, nullable=False, default=0, comment="Минорная версия")
+
+    s3_key = Column(String, nullable=False, comment="UUID-ключ объекта версии в MinIO")
+
+    original_filename = Column(String, nullable=False, comment="Оригинальное имя файла версии")
+
+    file_size = Column(BigInteger, nullable=False, comment="Размер файла версии в байтах")
+
+    mime_type = Column(String, nullable=False, comment="MIME-тип файла версии")
+
+    uploaded_by = Column(
+        String,
+        ForeignKey("employee.eid"),
+        nullable=False,
+        comment="Кто загрузил эту версию",
+    )
+
+    upload_comment = Column(String, nullable=True, comment="Комментарий к версии")
+
+    is_current = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="Является ли версия актуальной",
+    )
+
+    created_at = Column(DateTime, server_default=func.now())

@@ -4,10 +4,12 @@ from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import ConnectionError
 
 from core.config.settings import get_settings
+from core.services.document_es_service import DocumentElasticsearchService
 from core.services.elastic_search_service import EmployeeElasticsearchService
 
 _elasticsearch_client: Optional[Elasticsearch] = None
 _elasticsearch_service: Optional[EmployeeElasticsearchService] = None
+_document_es_service: Optional[DocumentElasticsearchService] = None
 
 
 def get_elasticsearch_client() -> Elasticsearch:
@@ -38,3 +40,14 @@ def get_elasticsearch_service() -> EmployeeElasticsearchService:
         )
 
     return _elasticsearch_service
+
+
+def get_document_es_service() -> DocumentElasticsearchService:
+    global _document_es_service
+    settings = get_settings()
+    if _document_es_service is None:
+        es_client = get_elasticsearch_client()
+        _document_es_service = DocumentElasticsearchService(
+            es_client=es_client, index_name=settings.ELASTICSEARCH_DOCUMENTS_INDEX
+        )
+    return _document_es_service
