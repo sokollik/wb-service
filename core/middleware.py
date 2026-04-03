@@ -1,10 +1,12 @@
 from functools import wraps
 from typing import List, Optional
+
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
 from core.common.token_service import TokenService
 from core.services.rbac_service import RBACService
-from core.api.deps import get_session_obj
+from core.utils.db_util import get_session_obj
 
 
 class JWTBearer(HTTPBearer):

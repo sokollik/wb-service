@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import List, Optional
-<<<<<<< HEAD
 
 from pydantic import BaseModel, Field, computed_field
 
@@ -18,47 +17,17 @@ class DocumentSchema(BaseModel):
     curator_id: Optional[str] = None
     original_filename: str
     file_size: int
-    mime_type: str
+    mime_type: int
     archived_at: Optional[datetime] = None
     archived_by: Optional[str] = None
     archive_comment: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-=======
-from pydantic import BaseModel, Field
-
-
-class DocumentBase(BaseModel):
-    name: str
-    original_extension: str
-    original_mime_type: str
-    original_size: int
-
-
-class DocumentCreate(DocumentBase):
-    created_by: str
-
-
-class DocumentResponse(BaseModel):
-    id: int
-    name: str
-    original_extension: str
-    original_mime_type: str
-    original_size: int
-    converted_path: Optional[str] = None
-    converted_at: Optional[datetime] = None
-    conversion_status: Optional[str] = None
-    cache_expires_at: Optional[datetime] = None
-    created_by: str
-    created_at: datetime
-    updated_at: datetime
->>>>>>> main
 
     class Config:
         from_attributes = True
 
 
-<<<<<<< HEAD
 class DocumentArchiveSchema(BaseModel):
     comment: str = Field(..., min_length=1, max_length=500)
 
@@ -88,7 +57,31 @@ class DocumentVersionSchema(BaseModel):
     @property
     def version_number(self) -> str:
         return f"{self.version_major}.{self.version_minor}"
-=======
+
+    class Config:
+        from_attributes = True
+
+
+class DocumentSearchResultSchema(BaseModel):
+    doc_id: int
+    title: str
+    type: Optional[str] = None
+    status: Optional[str] = None
+    author_id: Optional[str] = None
+    curator_id: Optional[str] = None
+    folder_id: Optional[int] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+    score: float = 0.0
+
+
+class DocumentSearchResponse(BaseModel):
+    total: int
+    results: List[DocumentSearchResultSchema]
+    error: Optional[str] = None
+
+
+# Stream & Conversion
 class DocumentStreamResponse(BaseModel):
     document_id: int
     file_name: str
@@ -122,31 +115,11 @@ class DownloadLogResponse(BaseModel):
     file_size: int
     user_agent: Optional[str] = None
     ip_address: Optional[str] = None
->>>>>>> main
 
     class Config:
         from_attributes = True
 
 
-<<<<<<< HEAD
-class DocumentSearchResultSchema(BaseModel):
-    doc_id: int
-    title: str
-    type: Optional[str] = None
-    status: Optional[str] = None
-    author_id: Optional[str] = None
-    curator_id: Optional[str] = None
-    folder_id: Optional[int] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-    score: float = 0.0
-
-
-class DocumentSearchResponse(BaseModel):
-    total: int
-    results: List[DocumentSearchResultSchema]
-    error: Optional[str] = None
-=======
 class DownloadLogsListResponse(BaseModel):
     total: int
     logs: list[DownloadLogResponse]
@@ -160,6 +133,8 @@ class DocumentViewerConfig(BaseModel):
     total_pages: Optional[int] = None
     file_size: int
 
+
+# Acknowledgments
 class DocumentAcknowledgmentAssignSchema(BaseModel):
     employee_eids: List[str] = Field(
         ...,
@@ -186,7 +161,6 @@ class DocumentAcknowledgmentSchema(BaseModel):
 
 
 class DocumentAcknowledgmentDetailSchema(DocumentAcknowledgmentSchema):
-
     document_name: str = Field(..., description="Название документа")
     is_overdue: bool = Field(False, description="Просрочено ли ознакомление")
 
@@ -215,4 +189,3 @@ class DocumentAcknowledgmentExportSchema(BaseModel):
     acknowledged_by: Optional[str]
     status: str
     is_overdue: bool
->>>>>>> main
