@@ -31,6 +31,7 @@ class NotificationOrm(Base):
     id = Column(
         sa.BigInteger,
         primary_key=True,
+        autoincrement=True,
     )
     user_eid = Column(
         String,

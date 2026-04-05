@@ -45,12 +45,13 @@ class NotificationService:
         )
 
         unread_count = await self.notification_repo.get_unread_count(user_eid)
+        total_count = len(notifications) if notifications else 0
 
         return {
-            "total": unread_count + len([n for n in notifications if n.is_read]),
-            "unread_count": unread_count,
+            "total": total_count,
+            "unread_count": unread_count or 0,
             "notifications": [
-                NotificationSchema.model_validate(n) for n in notifications
+                NotificationSchema.model_validate(n) for n in (notifications or [])
             ],
             "page": page,
             "size": size,
