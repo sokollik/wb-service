@@ -22,7 +22,7 @@ class NewsListResponseSchema(BaseModel):
     id: int
     title: str
     short_description: str
-    author_name: str = Field(...)
+    author_name: Optional[str] = None
     categories: List[CategorySchema] = []
     file_ids: List[int] = []
     published_at: Optional[datetime] = None
@@ -43,7 +43,7 @@ class NewsFullSchema(BaseModel):
     id: int
     title: str
     short_description: str
-    author_name: str = Field(...)
+    author_name: Optional[str] = None
     file_ids: List[int] = []
     published_at: Optional[datetime] = None
     is_pinned: bool

@@ -29,7 +29,7 @@ class NewsController:
         self.session = session
         self.news_service = NewsService(session=session)
 
-    @news_router.get("/", response_model=List[NewsListResponseSchema])
+    @news_router.get("/", response_model=List[dict])
     @exception_handler
     async def get_news(
         self,
@@ -110,7 +110,7 @@ class NewsController:
             category_id=category_id, user_eid=current_user.eid
         )
 
-    @news_router.get("/{news_id}", response_model=NewsFullSchema)
+    @news_router.get("/{news_id}", response_model=dict)
     @exception_handler
     async def get_news_by_id(
         self,

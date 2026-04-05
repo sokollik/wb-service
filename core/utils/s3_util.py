@@ -20,6 +20,17 @@ async def get_s3_client() -> AsyncGenerator[S3Client, None]:
         yield client
 
 
-async def get_s3_dep() -> AsyncGenerator[S3Client, None]:
-    async with get_s3_client() as client:
+async def get_s3_dep():
+    """FastAPI dependency для получения S3 клиента"""
+    settings = get_settings()
+    session = get_session()
+    client = await session.create_client(
+        "s3",
+        endpoint_url=settings.MINIO_ENDPOINT,
+        aws_access_key_id=settings.MINIO_ACCESS_KEY,
+        aws_secret_access_key=settings.MINIO_SECRET_KEY,
+    )
+    try:
         yield client
+    finally:
+        await client.close()
