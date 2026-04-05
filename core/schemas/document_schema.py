@@ -17,7 +17,7 @@ class DocumentSchema(BaseModel):
     curator_id: Optional[str] = None
     original_filename: str
     file_size: int
-    mime_type: int
+    mime_type: str
     archived_at: Optional[datetime] = None
     archived_by: Optional[str] = None
     archive_comment: Optional[str] = None
