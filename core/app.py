@@ -94,9 +94,8 @@ app.add_middleware(
         "http://localhost:3000",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:3000",
-        "*",  # Development only - remove in production
     ],
-    allow_credentials=False,  # Must be False when allow_origins contains "*"
+    allow_credentials=True,  # Required for auth cookies/headers
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
