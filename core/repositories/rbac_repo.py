@@ -211,10 +211,11 @@ class RBACRepository:
         self, user_eid: str, resource: str, action: str
     ) -> bool:
         permission_name = f"{resource}:{action}"
-        
+
         query = (
             select(PermissionOrm)
             .join(RolePermissionOrm, PermissionOrm.id == RolePermissionOrm.permission_id)
+            .join(RoleOrm, RoleOrm.id == RolePermissionOrm.role_id)
             .join(UserRoleOrm, RoleOrm.id == UserRoleOrm.role_id)
             .where(
                 UserRoleOrm.user_eid == user_eid,

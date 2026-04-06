@@ -62,8 +62,8 @@ class DocumentService:
         show_archived: bool = False,
         current_user_eid: str | None = None,
         is_privileged: bool = False,
-    ) -> list[DocumentOrm]:
-        return await self.document_repo.get_by_folder(
+    ) -> list[dict]:
+        docs = await self.document_repo.get_by_folder(
             folder_id,
             limit,
             offset,
@@ -71,6 +71,9 @@ class DocumentService:
             current_user_eid=current_user_eid,
             is_privileged=is_privileged,
         )
+        # Преобразуем ORM объекты в dict для сериализации
+        from core.schemas.document_schema import DocumentSchema
+        return [DocumentSchema.model_validate(doc).model_dump() for doc in docs]
 
     async def upload(
         self,
@@ -155,7 +158,7 @@ class DocumentService:
         self,
         doc_id: int,
         data: DocumentUpdateSchema,
-    ) -> DocumentOrm:
+    ) -> dict:
         doc = await self.get_document(doc_id)
         update_data = data.model_dump(exclude_none=True)
         for field, value in update_data.items():
@@ -169,7 +172,9 @@ class DocumentService:
             }
             es_fields["updated_at"] = doc.updated_at.isoformat() if doc.updated_at else None
             self.es.update_document_meta(doc_id, es_fields)
-        return doc
+        
+        from core.schemas.document_schema import DocumentSchema
+        return DocumentSchema.model_validate(doc).model_dump()
 
     async def generate_presigned_url(
         self,
@@ -204,9 +209,11 @@ class DocumentService:
 
     # ── Версии ──────────────────────────────────────────────────────────────
 
-    async def get_versions(self, doc_id: int) -> list[DocumentVersionOrm]:
+    async def get_versions(self, doc_id: int) -> list[dict]:
         await self.get_document(doc_id)
-        return await self.version_repo.get_by_document(doc_id)
+        versions = await self.version_repo.get_by_document(doc_id)
+        from core.schemas.document_schema import DocumentVersionSchema
+        return [DocumentVersionSchema.model_validate(v).model_dump() for v in versions]
 
     async def upload_version(
         self,
@@ -217,7 +224,7 @@ class DocumentService:
         current_user_roles: list[str],
         upload_comment: str | None = None,
         bump_major: bool = False,
-    ) -> DocumentVersionOrm:
+    ) -> dict:
         doc = await self.get_document(doc_id)
 
         is_privileged = any(r in current_user_roles for r in ["hr", "admin"])
@@ -277,11 +284,12 @@ class DocumentService:
         doc.mime_type = file.content_type
         await self.session.flush()
 
-        return new_version
+        from core.schemas.document_schema import DocumentVersionSchema
+        return DocumentVersionSchema.model_validate(new_version).model_dump()
 
     async def set_current_version(
         self, doc_id: int, version_id: int
-    ) -> DocumentVersionOrm:
+    ) -> dict:
         await self.get_document(doc_id)
         version = await self.version_repo.get_by_id(version_id)
         if not version or version.document_id != doc_id:
@@ -294,7 +302,9 @@ class DocumentService:
         )
         version.is_current = True
         await self.session.flush()
-        return version
+        
+        from core.schemas.document_schema import DocumentVersionSchema
+        return DocumentVersionSchema.model_validate(version).model_dump()
 
     async def download_version(
         self, doc_id: int, version_id: int, s3: S3Client
@@ -351,7 +361,7 @@ class DocumentService:
         doc_id: int,
         archived_by: str,
         comment: str,
-    ) -> DocumentOrm:
+    ) -> dict:
         doc = await self.get_document(doc_id)
         if doc.status == DocumentStatus.ARCHIVED:
             raise NotAllowedHttpException()
@@ -363,9 +373,11 @@ class DocumentService:
         await self.session.refresh(doc)
         if self.es:
             self.es.update_document_meta(doc_id, {"status": DocumentStatus.ARCHIVED.value})
-        return doc
+        
+        from core.schemas.document_schema import DocumentSchema
+        return DocumentSchema.model_validate(doc).model_dump()
 
-    async def restore_document(self, doc_id: int) -> DocumentOrm:
+    async def restore_document(self, doc_id: int) -> dict:
         doc = await self.get_document(doc_id)
         if doc.status != DocumentStatus.ARCHIVED:
             raise NotAllowedHttpException()
@@ -377,4 +389,6 @@ class DocumentService:
         await self.session.refresh(doc)
         if self.es:
             self.es.update_document_meta(doc_id, {"status": DocumentStatus.ACTIVE.value})
-        return doc
+        
+        from core.schemas.document_schema import DocumentSchema
+        return DocumentSchema.model_validate(doc).model_dump()

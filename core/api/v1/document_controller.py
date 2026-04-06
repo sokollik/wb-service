@@ -35,7 +35,7 @@ class DocumentController:
         self.s3 = s3
         self.document_service = DocumentService(session=session, es=es)
 
-    @document_router.get("/", response_model=List[DocumentSchema])
+    @document_router.get("/", response_model=List[dict])
     @exception_handler
     async def get_documents(
         self,
@@ -56,7 +56,7 @@ class DocumentController:
             is_privileged=is_privileged,
         )
 
-    @document_router.get("/search", response_model=DocumentSearchResponse)
+    @document_router.get("/search", response_model=dict)
     @exception_handler
     async def search_documents(
         self,
@@ -88,7 +88,7 @@ class DocumentController:
             size=size,
         )
 
-    @document_router.get("/{doc_id}", response_model=DocumentSchema)
+    @document_router.get("/{doc_id}", response_model=dict)
     @exception_handler
     async def get_document(
         self,
@@ -134,7 +134,7 @@ class DocumentController:
             curator_id=curator_id,
         )
 
-    @document_router.patch("/{doc_id}", response_model=DocumentSchema)
+    @document_router.patch("/{doc_id}", response_model=dict)
     @exception_handler
     async def update_document(
         self,
@@ -153,7 +153,7 @@ class DocumentController:
     ):
         await self.document_service.delete_document(doc_id, self.s3)
 
-    @document_router.put("/{doc_id}/archive", response_model=DocumentSchema)
+    @document_router.put("/{doc_id}/archive", response_model=dict)
     @exception_handler
     async def archive_document(
         self,
@@ -167,7 +167,7 @@ class DocumentController:
             comment=data.comment,
         )
 
-    @document_router.put("/{doc_id}/restore", response_model=DocumentSchema)
+    @document_router.put("/{doc_id}/restore", response_model=dict)
     @exception_handler
     async def restore_document(
         self,
@@ -178,7 +178,7 @@ class DocumentController:
 
     # ── Версии ──────────────────────────────────────────────────────────────
 
-    @document_router.get("/{doc_id}/versions", response_model=List[DocumentVersionSchema])
+    @document_router.get("/{doc_id}/versions", response_model=List[dict])
     @exception_handler
     async def get_versions(
         self,
@@ -187,7 +187,7 @@ class DocumentController:
     ):
         return await self.document_service.get_versions(doc_id)
 
-    @document_router.post("/{doc_id}/versions", response_model=DocumentVersionSchema)
+    @document_router.post("/{doc_id}/versions", response_model=dict)
     @exception_handler
     async def upload_version(
         self,
@@ -220,7 +220,7 @@ class DocumentController:
         )
         return {"url": url}
 
-    @document_router.patch("/{doc_id}/versions/{version_id}/set-current", response_model=DocumentVersionSchema)
+    @document_router.patch("/{doc_id}/versions/{version_id}/set-current", response_model=dict)
     @exception_handler
     async def set_current_version(
         self,
