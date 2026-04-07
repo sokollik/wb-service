@@ -2,13 +2,13 @@ from fastapi import HTTPException
 
 
 class ForbiddenHttpException(HTTPException):
-    def __init__(self, msg: str = "Forbidden", lang: str = "en"):
-        super().__init__(status_code=403, detail=msg)
+    def __init__(self, detail: str = "Forbidden", **kwargs):
+        super().__init__(status_code=403, detail=detail)
 
 
 class NotFoundException(HTTPException):
-    def __init__(self, msg: str = "Not Found", lang: str = "en"):
-        super().__init__(status_code=404, detail=msg)
+    def __init__(self, detail: str = "Not Found", **kwargs):
+        super().__init__(status_code=404, detail=detail)
 
 
 class NotFoundHttpException(HTTPException):

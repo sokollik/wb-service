@@ -24,13 +24,15 @@ async def get_s3_dep():
     """FastAPI dependency для получения S3 клиента"""
     settings = get_settings()
     session = get_session()
-    client = await session.create_client(
+    # create_client возвращает контекстный менеджер, нужно войти в него
+    cm = session.create_client(
         "s3",
         endpoint_url=settings.MINIO_ENDPOINT,
         aws_access_key_id=settings.MINIO_ACCESS_KEY,
         aws_secret_access_key=settings.MINIO_SECRET_KEY,
     )
+    client = await cm.__aenter__()
     try:
         yield client
     finally:
-        await client.close()
+        await cm.__aexit__(None, None, None)
