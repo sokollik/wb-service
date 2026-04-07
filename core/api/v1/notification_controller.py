@@ -31,7 +31,7 @@ class NotificationController:
 
     @notification_router.get(
         "/",
-        response_model=NotificationListResponseSchema,
+        response_model=dict,
     )
     @exception_handler
     async def get_notifications(

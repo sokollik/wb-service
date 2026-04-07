@@ -71,6 +71,9 @@ class Settings(BaseSettings):
     BAND_BOT_TOKEN: str = os.getenv("BAND_BOT_TOKEN", "")
     BAND_BOT_TIMEOUT: int = int(os.getenv("BAND_BOT_TIMEOUT", "30"))
 
+    # Development settings
+    DISABLE_RBAC: bool = os.getenv("DISABLE_RBAC", "false").lower() == "true"
+
 
 def get_settings():
     return Settings()

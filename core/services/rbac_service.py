@@ -2,6 +2,7 @@ from typing import List, Optional
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.common.common_exc import ForbiddenHttpException, NotFoundException
+from core.config.settings import get_settings
 from core.models.rbac import RoleEnum
 from core.models.org_structure import OrgUnitOrm
 from core.repositories.rbac_repo import RBACRepository
@@ -18,6 +19,7 @@ class RBACService:
     def __init__(self, session: AsyncSession):
         self.session = session
         self.rbac_repo = RBACRepository(session=self.session)
+        self.settings = get_settings()
 
     async def get_all_roles(self) -> List[RoleSchema]:
         roles = await self.rbac_repo.get_all_roles()
@@ -183,6 +185,10 @@ class RBACService:
         action: str,
         required_roles: Optional[List[str]] = None,
     ):
+        # Skip RBAC check in development if DISABLE_RBAC is true
+        if self.settings.DISABLE_RBAC:
+            return
+
         try:
             if await self.check_role(user_eid, [RoleEnum.ADMIN]):
                 return
@@ -197,9 +203,9 @@ class RBACService:
                     detail=f"Недостаточно прав для {action} {resource}"
                 )
         except Exception as e:
-            # Если таблицы RBAC пусты или есть ошибка, разрешаем доступ в development
-            if "does not exist" in str(e) or "relation" in str(e).lower():
-                return  # Skip RBAC check in development
+            # If RBAC tables don't exist or are empty, allow access in development
+            if self.settings.DISABLE_RBAC or "does not exist" in str(e).lower() or "relation" in str(e).lower():
+                return
             raise
 
     async def get_curator_scopes(

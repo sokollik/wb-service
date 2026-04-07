@@ -60,7 +60,7 @@ class NotificationSchema(BaseModel):
     payload: Optional[Dict[str, Any]] = None
     is_read: bool = False
     is_mandatory: bool = False
-    created_at: datetime
+    created_at: Optional[datetime] = None
     sent_at: Optional[datetime] = None
     delivered_at: Optional[datetime] = None
 

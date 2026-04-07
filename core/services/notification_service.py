@@ -47,12 +47,27 @@ class NotificationService:
         unread_count = await self.notification_repo.get_unread_count(user_eid)
         total_count = len(notifications) if notifications else 0
 
+        # Преобразуем ORM объекты в dict для сериализации
+        notification_dicts = []
+        for n in (notifications or []):
+            notification_dicts.append({
+                "id": n.id,
+                "user_eid": n.user_eid,
+                "event_type": n.event_type,
+                "title": n.title,
+                "message": n.message,
+                "payload": n.payload if n.payload else None,
+                "is_read": n.is_read,
+                "is_mandatory": n.is_mandatory,
+                "created_at": n.created_at.isoformat() if n.created_at else None,
+                "sent_at": n.sent_at.isoformat() if n.sent_at else None,
+                "delivered_at": n.delivered_at.isoformat() if n.delivered_at else None,
+            })
+
         return {
             "total": total_count,
             "unread_count": unread_count or 0,
-            "notifications": [
-                NotificationSchema.model_validate(n) for n in (notifications or [])
-            ],
+            "notifications": notification_dicts,
             "page": page,
             "size": size,
         }
