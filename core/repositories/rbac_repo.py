@@ -335,6 +335,8 @@ class RBACRepository:
             ("documents:create", "documents", "create", "Загрузка документов"),
             ("documents:read", "documents", "read", "Чтение документов"),
             ("documents:delete", "documents", "delete", "Удаление документов"),
+            ("notifications:read", "notifications", "read", "Чтение уведомлений"),
+            ("notifications:manage", "notifications", "manage", "Управление уведомлениями"),
             ("users:manage", "users", "manage", "Управление пользователями"),
             ("roles:manage", "roles", "manage", "Управление ролями"),
             ("permissions:manage", "permissions", "manage", "Управление разрешениями"),
@@ -361,6 +363,7 @@ class RBACRepository:
                 "comments:read",
                 "profile:read",
                 "documents:read",
+                "notifications:read",
             ]:
                 perm = await self.get_permission_by_name(perm_name)
                 if perm:
@@ -380,6 +383,7 @@ class RBACRepository:
                 "documents:create",
                 "documents:read",
                 "documents:delete",
+                "notifications:read",
             ]:
                 perm = await self.get_permission_by_name(perm_name)
                 if perm:
