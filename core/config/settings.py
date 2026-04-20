@@ -1,5 +1,4 @@
 import os
-
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 
@@ -38,6 +37,9 @@ class Settings(BaseSettings):
     ELASTICSEARCH_INDEX_NAME: str = os.getenv(
         "ELASTICSEARCH_INDEX_NAME", "employee"
     )
+    ELASTICSEARCH_DOCUMENTS_INDEX: str = os.getenv(
+        "ELASTICSEARCH_DOCUMENTS_INDEX", "documents"
+    )
     KEYCLOAK_SERVER_URL: str = os.getenv(
         "KEYCLOAK_SERVER_URL", "http://localhost:8080/auth"
     )
@@ -57,6 +59,20 @@ class Settings(BaseSettings):
     SCHEDULED_NEWS_CHECK_INTERVAL: int = int(
         os.getenv("SCHEDULED_NEWS_CHECK_INTERVAL", "60")
     )
+    
+    THESIS_BASE_URL: str = os.getenv(
+        "THESIS_BASE_URL", "https://thesis.corporate.ru"
+    )
+    THESIS_CLIENT_ID: str = os.getenv("THESIS_CLIENT_ID", "")
+    THESIS_CLIENT_SECRET: str = os.getenv("THESIS_CLIENT_SECRET", "")
+    THESIS_JWT_SECRET: str = os.getenv("THESIS_JWT_SECRET", "")
+    
+    BAND_BOT_URL: str = os.getenv("BAND_BOT_URL", "")
+    BAND_BOT_TOKEN: str = os.getenv("BAND_BOT_TOKEN", "")
+    BAND_BOT_TIMEOUT: int = int(os.getenv("BAND_BOT_TIMEOUT", "30"))
+
+    # Development settings
+    DISABLE_RBAC: bool = os.getenv("DISABLE_RBAC", "false").lower() == "true"
 
 
 def get_settings():

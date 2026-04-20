@@ -31,5 +31,5 @@ class NewsStatus(Enum):
 
 class DocumentStatus(Enum):
     DRAFT = "DRAFT"
-    PUBLISHED = "PUBLISHED"
+    ACTIVE = "ACTIVE"
     ARCHIVED = "ARCHIVED"

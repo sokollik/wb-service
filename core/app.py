@@ -11,7 +11,7 @@ from core.api.v1.v1 import v1_router
 from core.config.settings import get_settings
 from core.services.elastic_sync_service import EmployeeSyncService
 from core.utils.db_util import get_session
-from core.utils.elastic_search_util import get_elasticsearch_service
+from core.utils.elastic_search_util import get_document_es_service, get_elasticsearch_service
 from core.utils.scheduler import scheduled_news_publisher
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -28,6 +28,9 @@ async def lifespan(app: FastAPI):
     try:
         es_service = get_elasticsearch_service()
         es_service.create_index()
+
+        doc_es_service = get_document_es_service()
+        doc_es_service.create_index()
         try:
             async with get_session() as db_session:
                 sync_service = EmployeeSyncService(db_session, es_service)
@@ -87,9 +90,12 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "*",
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000",
     ],
-    allow_credentials=True,
+    allow_credentials=True,  # Required for auth cookies/headers
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],

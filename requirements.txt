@@ -17,9 +17,10 @@ pillow
 python-multipart
 pandas
 xlsxwriter
-fastapi-restful==0.6.0
 elasticsearch==8.11.0
 python-jose[cryptography]
 aiobotocore
 types-aiobotocore[s3]
+cryptography
+httpx[http2]
 

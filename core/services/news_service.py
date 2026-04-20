@@ -69,7 +69,8 @@ class NewsService:
             search=search,
         )
 
-        return news_items
+        # Преобразуем RowMapping в dict для сериализации
+        return [dict(item) for item in news_items]
 
     async def get_news_by_id(
         self, news_id: int, user_eid: Optional[str] = None
@@ -77,7 +78,8 @@ class NewsService:
         news = await self.news_repo.get_news_detail(news_id, user_eid=user_eid)
         if not news:
             raise NotFoundHttpException(name="news")
-        return news
+        # Преобразуем RowMapping в dict для сериализации
+        return dict(news)
 
     async def create_news(self, author_id: str, data: NewsCreateSchema):
         status = data.status
