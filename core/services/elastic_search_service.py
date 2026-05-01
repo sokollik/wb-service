@@ -187,12 +187,7 @@ class EmployeeElasticsearchService:
                 }
             }
         else:
-            eid_condition = None
-            try:
-                eid_value = int(query.strip())
-                eid_condition = {"term": {"eid": str(eid_value)}}
-            except (ValueError, TypeError):
-                pass
+            eid_condition = {"term": {"eid": query.strip()}}
 
             must_conditions = [
                 {
@@ -334,7 +329,7 @@ class EmployeeElasticsearchService:
                 source = hit["_source"]
                 suggestions.append(
                     {
-                        "eid": int(source["eid"]),
+                        "eid": source["eid"],
                         "full_name": source["full_name"],
                         "position": source["position"],
                         "department": source.get("organization_unit_name", ""),
@@ -350,7 +345,7 @@ class EmployeeElasticsearchService:
     def _format_hit(self, hit: Dict) -> Dict[str, Any]:
         source = hit["_source"]
         return {
-            "eid": int(source["eid"]),
+            "eid": source["eid"],
             "full_name": source.get("full_name", ""),
             "position": source.get("position", ""),
             "work_email": source.get("work_email"),
