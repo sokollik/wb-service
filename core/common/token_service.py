@@ -41,7 +41,6 @@ class TokenService:
 
     @staticmethod
     def get_user_info(token: str) -> dict[str, any]:
-        print(23242424242432)
         payload = TokenService.validate_token(token)
         return {
             "eid": payload.get("sub"),

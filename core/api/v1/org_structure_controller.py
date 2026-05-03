@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from fastapi_restful.cbv import cbv
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.api.deps import CurrentUser, require_roles
+from core.api.deps import CheckPermissionDep, CurrentUser
 from core.schemas.org_structure_schema import (
     OrgChangeLogShema,
     OrgUnitCreateSchema,
@@ -39,9 +39,7 @@ class OrgStructureController:
     @exception_handler
     async def get_full_org_hierarchy(
         self,
-        _current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin", "news_editor"])
-        ),
+        _current_user: CurrentUser = Depends(CheckPermissionDep("org", "read")),
     ) -> List[OrgUnitHierarchySchema]:
         return await self.org_structure_service.get_org_structure_hierarchy()
 
@@ -51,7 +49,7 @@ class OrgStructureController:
         self,
         unit_id: int,
         new_parent_id: int | None = None,
-        _current_user: CurrentUser = Depends(require_roles(["admin", "hr"])),
+        _current_user: CurrentUser = Depends(CheckPermissionDep("org", "manage")),
     ):
         return await self.org_structure_service.move_org_unit(
             unit_id=unit_id, new_parent_id=new_parent_id
@@ -64,7 +62,7 @@ class OrgStructureController:
     async def create_org_unit(
         self,
         data: OrgUnitCreateSchema,
-        current_user: CurrentUser = Depends(require_roles(["admin", "hr"])),
+        current_user: CurrentUser = Depends(CheckPermissionDep("org", "manage")),
     ):
         return await self.org_structure_service.create_org_unit(
             data, current_user.eid
@@ -77,9 +75,7 @@ class OrgStructureController:
     async def get_org_unit(
         self,
         unit_id: int,
-        _current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin", "news_editor"])
-        ),
+        _current_user: CurrentUser = Depends(CheckPermissionDep("org", "read")),
     ):
         return await self.org_structure_service.get_org_unit(unit_id)
 
@@ -91,7 +87,7 @@ class OrgStructureController:
         self,
         unit_id: int,
         data: OrgUnitUpdateSchema,
-        current_user: CurrentUser = Depends(require_roles(["admin", "hr"])),
+        current_user: CurrentUser = Depends(CheckPermissionDep("org", "manage")),
     ):
         await self.org_structure_service.update_org_unit(
             unit_id, data, current_user.eid
@@ -105,7 +101,7 @@ class OrgStructureController:
     async def delete_org_unit(
         self,
         unit_id: int,
-        current_user: CurrentUser = Depends(require_roles(["admin", "hr"])),
+        current_user: CurrentUser = Depends(CheckPermissionDep("org", "manage")),
     ):
         await self.org_structure_service.delete_org_unit(
             unit_id, current_user.eid
@@ -120,7 +116,7 @@ class OrgStructureController:
         self,
         unit_id: int,
         manager_eid: str,
-        current_user: CurrentUser = Depends(require_roles(["admin", "hr"])),
+        current_user: CurrentUser = Depends(CheckPermissionDep("org", "manage")),
     ):
         return await self.org_structure_service.set_manager(
             unit_id, manager_eid, current_user.eid
@@ -133,6 +129,6 @@ class OrgStructureController:
     async def get_org_unit_edit_log(
         self,
         unit_id: int,
-        _current_user: CurrentUser = Depends(require_roles(["admin", "hr"])),
+        _current_user: CurrentUser = Depends(CheckPermissionDep("org", "manage")),
     ) -> list[OrgChangeLogShema]:
         return await self.org_structure_service.get_org_unit_edit_log(unit_id)

@@ -7,7 +7,7 @@ from io import BytesIO
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.services.document_export_service import DocumentExportService
 
-from core.api.deps import CurrentUser, require_roles, CheckPermissionDep
+from core.api.deps import CheckPermissionDep, CurrentUser
 from core.schemas.document_schema import (
     DocumentAcknowledgmentAssignSchema,
     DocumentAcknowledgmentListResponse,

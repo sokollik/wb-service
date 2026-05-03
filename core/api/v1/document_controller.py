@@ -5,7 +5,7 @@ from fastapi_restful.cbv import cbv
 from sqlalchemy.ext.asyncio import AsyncSession
 from types_aiobotocore_s3 import S3Client
 
-from core.api.deps import CurrentUser, require_roles
+from core.api.deps import CheckPermissionDep, CurrentUser
 from core.schemas.document_schema import (
     DocumentArchiveSchema,
     DocumentSchema,
@@ -39,7 +39,7 @@ class DocumentController:
     @exception_handler
     async def get_documents(
         self,
-        current_user: CurrentUser = Depends(require_roles(["employee", "hr", "admin", "news_editor"])),
+        current_user: CurrentUser = Depends(CheckPermissionDep("documents", "read")),
         folder_id: Optional[int] = Query(None),
         show_archived: bool = Query(False),
         page: int = Query(1, ge=1),
@@ -60,7 +60,7 @@ class DocumentController:
     @exception_handler
     async def search_documents(
         self,
-        _current_user: CurrentUser = Depends(require_roles(["employee", "hr", "admin"])),
+        _current_user: CurrentUser = Depends(CheckPermissionDep("documents", "read")),
         q: Optional[str] = Query(None, description="Поисковый запрос"),
         doc_type: Optional[str] = Query(None, description="Тип файла: pdf, docx, xlsx..."),
         status: Optional[str] = Query(None, description="Статус: DRAFT, ACTIVE, ARCHIVED"),
@@ -93,9 +93,7 @@ class DocumentController:
     async def get_document(
         self,
         doc_id: int,
-        _current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin", "news_editor"])
-        ),
+        _current_user: CurrentUser = Depends(CheckPermissionDep("documents", "read")),
     ):
         return await self.document_service.get_document(doc_id)
 
@@ -104,9 +102,7 @@ class DocumentController:
     async def get_download_url(
         self,
         doc_id: int,
-        _current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin", "news_editor"])
-        ),
+        _current_user: CurrentUser = Depends(CheckPermissionDep("documents", "read")),
     ):
         url = await self.document_service.generate_presigned_url(
             doc_id=doc_id, s3=self.s3
@@ -118,7 +114,7 @@ class DocumentController:
     async def upload_document(
         self,
         file: UploadFile = File(...),
-        current_user: CurrentUser = Depends(require_roles(["hr", "admin"])),
+        current_user: CurrentUser = Depends(CheckPermissionDep("documents", "create")),
         folder_id: Optional[int] = Form(None),
         title: Optional[str] = Form(None),
         description: Optional[str] = Form(None),
@@ -140,7 +136,7 @@ class DocumentController:
         self,
         doc_id: int,
         data: DocumentUpdateSchema,
-        _current_user: CurrentUser = Depends(require_roles(["hr", "admin"])),
+        _current_user: CurrentUser = Depends(CheckPermissionDep("documents", "update")),
     ):
         return await self.document_service.update_document(doc_id, data)
 
@@ -149,7 +145,7 @@ class DocumentController:
     async def delete_document(
         self,
         doc_id: int,
-        _current_user: CurrentUser = Depends(require_roles(["hr", "admin"])),
+        _current_user: CurrentUser = Depends(CheckPermissionDep("documents", "delete")),
     ):
         await self.document_service.delete_document(doc_id, self.s3)
 
@@ -159,7 +155,7 @@ class DocumentController:
         self,
         doc_id: int,
         data: DocumentArchiveSchema,
-        current_user: CurrentUser = Depends(require_roles(["hr", "admin"])),
+        current_user: CurrentUser = Depends(CheckPermissionDep("documents", "manage")),
     ):
         return await self.document_service.archive_document(
             doc_id=doc_id,
@@ -172,7 +168,7 @@ class DocumentController:
     async def restore_document(
         self,
         doc_id: int,
-        _current_user: CurrentUser = Depends(require_roles(["hr", "admin"])),
+        _current_user: CurrentUser = Depends(CheckPermissionDep("documents", "manage")),
     ):
         return await self.document_service.restore_document(doc_id)
 
@@ -183,7 +179,7 @@ class DocumentController:
     async def get_versions(
         self,
         doc_id: int,
-        _current_user: CurrentUser = Depends(require_roles(["employee", "hr", "admin"])),
+        _current_user: CurrentUser = Depends(CheckPermissionDep("documents", "read")),
     ):
         return await self.document_service.get_versions(doc_id)
 
@@ -193,7 +189,7 @@ class DocumentController:
         self,
         doc_id: int,
         file: UploadFile = File(...),
-        current_user: CurrentUser = Depends(require_roles(["employee", "hr", "admin"])),
+        current_user: CurrentUser = Depends(CheckPermissionDep("documents", "create")),
         upload_comment: Optional[str] = Form(None),
         bump_major: bool = Form(False),
     ):
@@ -213,7 +209,7 @@ class DocumentController:
         self,
         doc_id: int,
         version_id: int,
-        _current_user: CurrentUser = Depends(require_roles(["employee", "hr", "admin"])),
+        _current_user: CurrentUser = Depends(CheckPermissionDep("documents", "read")),
     ):
         url = await self.document_service.download_version(
             doc_id=doc_id, version_id=version_id, s3=self.s3
@@ -226,7 +222,7 @@ class DocumentController:
         self,
         doc_id: int,
         version_id: int,
-        _current_user: CurrentUser = Depends(require_roles(["hr", "admin"])),
+        _current_user: CurrentUser = Depends(CheckPermissionDep("documents", "update")),
     ):
         return await self.document_service.set_current_version(doc_id, version_id)
 
@@ -236,7 +232,7 @@ class DocumentController:
         self,
         doc_id: int,
         version_id: int,
-        current_user: CurrentUser = Depends(require_roles(["employee", "hr", "admin"])),
+        current_user: CurrentUser = Depends(CheckPermissionDep("documents", "delete")),
         reason: str = Query(..., min_length=1, description="Основание для удаления версии"),
     ):
         await self.document_service.delete_version(

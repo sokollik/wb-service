@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query, Request, HTTPException
 from fastapi_restful.cbv import cbv
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.api.deps import CurrentUser, require_roles, CheckPermissionDep
+from core.api.deps import CheckPermissionDep, CurrentUser
 from core.services.integrations import KeycloakSSOService, ThesisIntegrationService
 from core.utils.common_util import exception_handler
 from core.utils.db_util import get_session_obj
@@ -70,7 +70,7 @@ class IntegrationController:
     async def trigger_keycloak_sync(
         self,
         limit: int = Query(100, ge=1, le=1000),
-        current_user: CurrentUser = Depends(require_roles(["admin"])),
+        current_user: CurrentUser = Depends(CheckPermissionDep("integrations", "manage")),
     ):
 
         synced_count = await self.keycloak_service.periodic_sync(limit=limit)

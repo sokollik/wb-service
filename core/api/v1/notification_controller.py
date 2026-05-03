@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query, HTTPException, status
 from fastapi_restful.cbv import cbv
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.api.deps import CurrentUser, require_roles, CheckPermissionDep
+from core.api.deps import CheckPermissionDep, CurrentUser
 from core.schemas.notification_schema import (
     NotificationBulkCreateSchema,
     NotificationCreateSchema,

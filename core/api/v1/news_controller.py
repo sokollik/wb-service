@@ -5,15 +5,13 @@ from fastapi import APIRouter, Depends, Query
 from fastapi_restful.cbv import cbv
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.api.deps import CurrentUser, require_roles, CheckPermissionDep
+from core.api.deps import CurrentUser, CheckPermissionDep
 from core.models.enums import NewsStatus
 from core.schemas.news_schema import (
     AcknowledgementStatusSchema,
     CategoryCreateSchema,
     CategorySchema,
     NewsCreateSchema,
-    NewsFullSchema,
-    NewsListResponseSchema,
     NewsUpdateSchema,
 )
 from core.services.news_service import NewsService

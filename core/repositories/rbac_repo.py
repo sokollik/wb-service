@@ -1,13 +1,14 @@
 from typing import List, Optional
-from sqlalchemy import delete, exists, select
+
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from core.models.rbac import (
     CuratorScopeOrm,
     PermissionOrm,
     RoleEnum,
     RoleOrm,
     RolePermissionOrm,
-    UserRoleOrm,
 )
 
 class RBACRepository:
@@ -147,94 +148,37 @@ class RBACRepository:
         return result.scalars().all()
 
 
-    async def get_user_roles(self, user_eid: str) -> List[RoleOrm]:
-        query = (
-            select(RoleOrm)
-            .join(UserRoleOrm, RoleOrm.id == UserRoleOrm.role_id)
-            .where(UserRoleOrm.user_eid == user_eid)
-        )
-        result = await self.session.execute(query)
-        return result.scalars().all()
-
-    async def assign_role_to_user(
-        self, user_eid: str, role_id: int, granted_by: Optional[str] = None
-    ) -> bool:
-
-        exists_query = select(UserRoleOrm).where(
-            UserRoleOrm.user_eid == user_eid,
-            UserRoleOrm.role_id == role_id,
-        )
-        result = await self.session.execute(exists_query)
-        if result.scalar_one_or_none():
-            return False
-
-        user_role = UserRoleOrm(
-            user_eid=user_eid, role_id=role_id, granted_by=granted_by
-        )
-        self.session.add(user_role)
-        await self.session.flush()
-        return True
-
-    async def remove_role_from_user(
-        self, user_eid: str, role_id: int
-    ) -> bool:
-
-        result = await self.session.execute(
-            delete(UserRoleOrm).where(
-                UserRoleOrm.user_eid == user_eid,
-                UserRoleOrm.role_id == role_id,
-            )
-        )
-        await self.session.flush()
-        return result.rowcount > 0
-
-    async def remove_all_roles_from_user(self, user_eid: str) -> int:
-
-        result = await self.session.execute(
-            delete(UserRoleOrm).where(UserRoleOrm.user_eid == user_eid)
-        )
-        await self.session.flush()
-        return result.rowcount
-    
-    async def get_user_permissions(self, user_eid: str) -> List[PermissionOrm]:
-
-        query = (
-            select(PermissionOrm)
-            .join(RolePermissionOrm, PermissionOrm.id == RolePermissionOrm.permission_id)
-            .join(UserRoleOrm, RoleOrm.id == UserRoleOrm.role_id)
-            .where(UserRoleOrm.user_eid == user_eid)
-        )
-        result = await self.session.execute(query)
-        return list({p.id: p for p in result.scalars().all()}.values())
-
-    async def check_user_permission(
-        self, user_eid: str, resource: str, action: str
-    ) -> bool:
-        permission_name = f"{resource}:{action}"
+    async def get_permissions_for_role_names(
+        self, role_names: List[str]
+    ) -> List[PermissionOrm]:
+        if not role_names:
+            return []
 
         query = (
             select(PermissionOrm)
             .join(RolePermissionOrm, PermissionOrm.id == RolePermissionOrm.permission_id)
             .join(RoleOrm, RoleOrm.id == RolePermissionOrm.role_id)
-            .join(UserRoleOrm, RoleOrm.id == UserRoleOrm.role_id)
-            .where(
-                UserRoleOrm.user_eid == user_eid,
-                PermissionOrm.name == permission_name,
-            )
+            .where(RoleOrm.name.in_(role_names))
         )
         result = await self.session.execute(query)
-        return result.scalar_one_or_none() is not None
+        return list({p.id: p for p in result.scalars().all()}.values())
 
-    async def check_user_role(
-        self, user_eid: str, required_roles: List[str]
+    async def check_role_permission(
+        self, role_names: List[str], resource: str, action: str
     ) -> bool:
+        if not role_names:
+            return False
+
+        permission_name = f"{resource}:{action}"
         query = (
-            select(RoleOrm)
-            .join(UserRoleOrm, RoleOrm.id == UserRoleOrm.role_id)
+            select(PermissionOrm.id)
+            .join(RolePermissionOrm, PermissionOrm.id == RolePermissionOrm.permission_id)
+            .join(RoleOrm, RoleOrm.id == RolePermissionOrm.role_id)
             .where(
-                UserRoleOrm.user_eid == user_eid,
-                RoleOrm.name.in_(required_roles),
+                RoleOrm.name.in_(role_names),
+                PermissionOrm.name == permission_name,
             )
+            .limit(1)
         )
         result = await self.session.execute(query)
         return result.scalar_one_or_none() is not None
@@ -309,39 +253,43 @@ class RBACRepository:
         return [row[0] for row in result.all()]
 
     async def initialize_default_roles(self):
-
         roles_data = [
-            (RoleEnum.EMPLOYEE, "Базовый сотрудник"),
-            (RoleEnum.CURATOR, "Куратор с расширенными правами"),
-            (RoleEnum.ADMIN, "Администратор системы"),
+            (RoleEnum.EMPLOYEE.value, "Базовый сотрудник"),
+            (RoleEnum.CURATOR.value, "Куратор с расширенными правами"),
+            (RoleEnum.NEWS_EDITOR.value, "Редактор новостей"),
+            (RoleEnum.HR.value, "Сотрудник HR"),
+            (RoleEnum.ADMIN.value, "Администратор системы"),
         ]
-
         for role_name, description in roles_data:
             existing = await self.get_role_by_name(role_name)
             if not existing:
                 await self.create_role(name=role_name, description=description)
 
         permissions_data = [
-            ("news:create", "news", "create", "Создание новостей"),
             ("news:read", "news", "read", "Чтение новостей"),
+            ("news:create", "news", "create", "Создание новостей"),
             ("news:update", "news", "update", "Редактирование новостей"),
             ("news:delete", "news", "delete", "Удаление новостей"),
-            ("news:publish", "news", "publish", "Публикация новостей"),
+            ("news:manage", "news", "manage", "Управление категориями/логами/ack"),
             ("comments:create", "comments", "create", "Создание комментариев"),
             ("comments:read", "comments", "read", "Чтение комментариев"),
             ("comments:delete", "comments", "delete", "Удаление комментариев"),
             ("profile:read", "profile", "read", "Чтение профилей"),
             ("profile:update", "profile", "update", "Редактирование профилей"),
-            ("documents:create", "documents", "create", "Загрузка документов"),
+            ("profile:manage", "profile", "manage", "Управление профилями"),
             ("documents:read", "documents", "read", "Чтение документов"),
+            ("documents:create", "documents", "create", "Загрузка документов"),
+            ("documents:update", "documents", "update", "Редактирование документов"),
             ("documents:delete", "documents", "delete", "Удаление документов"),
+            ("documents:manage", "documents", "manage", "Управление документами"),
+            ("folders:manage", "folders", "manage", "Управление папками"),
             ("notifications:read", "notifications", "read", "Чтение уведомлений"),
             ("notifications:manage", "notifications", "manage", "Управление уведомлениями"),
-            ("users:manage", "users", "manage", "Управление пользователями"),
-            ("roles:manage", "roles", "manage", "Управление ролями"),
-            ("permissions:manage", "permissions", "manage", "Управление разрешениями"),
+            ("org:read", "org", "read", "Чтение оргструктуры"),
+            ("org:manage", "org", "manage", "Управление оргструктурой"),
+            ("rbac:manage", "rbac", "manage", "Управление RBAC"),
+            ("integrations:manage", "integrations", "manage", "Управление интеграциями"),
         ]
-
         for perm_name, resource, action, description in permissions_data:
             existing = await self.get_permission_by_name(perm_name)
             if not existing:
@@ -352,46 +300,77 @@ class RBACRepository:
                     description=description,
                 )
 
-        employee_role = await self.get_role_by_name(RoleEnum.EMPLOYEE)
-        curator_role = await self.get_role_by_name(RoleEnum.CURATOR)
-        admin_role = await self.get_role_by_name(RoleEnum.ADMIN)
-
-        if employee_role:
-            for perm_name in [
+        role_to_perms = {
+            RoleEnum.EMPLOYEE.value: [
                 "news:read",
                 "comments:create",
                 "comments:read",
                 "profile:read",
                 "documents:read",
+                "documents:create",
                 "notifications:read",
-            ]:
-                perm = await self.get_permission_by_name(perm_name)
-                if perm:
-                    await self.assign_permission_to_role(
-                        employee_role.id, perm.id
-                    )
-
-        if curator_role:
-            for perm_name in [
+                "org:read",
+            ],
+            RoleEnum.CURATOR.value: [
                 "news:read",
                 "news:create",
                 "news:update",
+                "news:delete",
                 "comments:create",
                 "comments:read",
                 "comments:delete",
                 "profile:read",
-                "documents:create",
                 "documents:read",
+                "documents:create",
+                "documents:update",
                 "documents:delete",
+                "documents:manage",
                 "notifications:read",
-            ]:
-                perm = await self.get_permission_by_name(perm_name)
-                if perm:
-                    await self.assign_permission_to_role(
-                        curator_role.id, perm.id
-                    )
+                "org:read",
+            ],
+            RoleEnum.NEWS_EDITOR.value: [
+                "news:read",
+                "news:create",
+                "news:update",
+                "news:delete",
+                "comments:create",
+                "comments:read",
+                "profile:read",
+                "documents:read",
+                "notifications:read",
+                "org:read",
+            ],
+            RoleEnum.HR.value: [
+                "news:read",
+                "comments:create",
+                "comments:read",
+                "profile:read",
+                "profile:update",
+                "profile:manage",
+                "documents:read",
+                "documents:create",
+                "documents:update",
+                "documents:delete",
+                "documents:manage",
+                "folders:manage",
+                "notifications:read",
+                "notifications:manage",
+                "org:read",
+                "org:manage",
+            ],
+            RoleEnum.ADMIN.value: None,  # все разрешения
+        }
 
-        if admin_role:
-            all_perms = await self.get_all_permissions()
-            for perm in all_perms:
-                await self.assign_permission_to_role(admin_role.id, perm.id)
+        for role_name, perm_names in role_to_perms.items():
+            role = await self.get_role_by_name(role_name)
+            if not role:
+                continue
+            if perm_names is None:
+                perms = await self.get_all_permissions()
+            else:
+                perms = [
+                    await self.get_permission_by_name(name) for name in perm_names
+                ]
+            for perm in perms:
+                if perm:
+                    await self.assign_permission_to_role(role.id, perm.id)

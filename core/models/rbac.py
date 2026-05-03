@@ -1,20 +1,23 @@
+import enum
+
 import sqlalchemy as sa
 from sqlalchemy import (
     BigInteger,
     Column,
     DateTime,
-    Enum,
     ForeignKey,
     String,
-    Table,
     func,
 )
 from core.models.base import Base
 
-class RoleEnum(str, Enum):
-    EMPLOYEE = "EMPLOYEE"
-    CURATOR = "CURATOR"
-    ADMIN = "ADMIN"
+
+class RoleEnum(str, enum.Enum):
+    EMPLOYEE = "employee"
+    CURATOR = "curator"
+    NEWS_EDITOR = "news_editor"
+    HR = "hr"
+    ADMIN = "admin"
 
 class RoleOrm(Base):
     __tablename__ = "roles"
