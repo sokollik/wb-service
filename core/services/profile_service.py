@@ -103,12 +103,15 @@ class ProfileService:
         self,
         eid: str,
         profile_data: ProfileUpdateSchema,
+        changed_by_eid: str | None = None,
     ):
         profile = await self.common.get_one(
             ProfileOrm, where_stmt=ProfileOrm.employee_id == eid
         )
         if profile is None:
             raise NotFoundHttpException(name="profile")
+
+        actor_eid = changed_by_eid or eid
 
         if (
             profile_data.personal_phone is not None
@@ -117,7 +120,7 @@ class ProfileService:
             await self.common.add(
                 ProfileChangeLogOrm(
                     profile_id=profile.id,
-                    changed_by_eid=eid,
+                    changed_by_eid=actor_eid,
                     table_name="profile",
                     record_id=profile.id,
                     field_name="personal_phone",
@@ -138,7 +141,7 @@ class ProfileService:
             await self.common.add(
                 ProfileChangeLogOrm(
                     profile_id=profile.id,
-                    changed_by_eid=eid,
+                    changed_by_eid=actor_eid,
                     table_name="profile",
                     record_id=profile.id,
                     field_name="telegram",
@@ -157,7 +160,7 @@ class ProfileService:
             await self.common.add(
                 ProfileChangeLogOrm(
                     profile_id=profile.id,
-                    changed_by_eid=eid,
+                    changed_by_eid=actor_eid,
                     table_name="profile",
                     record_id=profile.id,
                     field_name="about_me",
@@ -176,7 +179,7 @@ class ProfileService:
             await self.common.add(
                 ProfileChangeLogOrm(
                     profile_id=profile.id,
-                    changed_by_eid=eid,
+                    changed_by_eid=actor_eid,
                     table_name="profile",
                     record_id=profile.id,
                     field_name="avatar_id",
@@ -209,7 +212,7 @@ class ProfileService:
                 await self.common.add(
                     ProfileChangeLogOrm(
                         profile_id=profile.id,
-                        changed_by_eid=eid,
+                        changed_by_eid=actor_eid,
                         table_name="profile_project",
                         record_id=old_project.id,
                         field_name="all",
@@ -257,7 +260,7 @@ class ProfileService:
                 await self.common.add(
                     ProfileChangeLogOrm(
                         profile_id=profile.id,
-                        changed_by_eid=eid,
+                        changed_by_eid=actor_eid,
                         table_name="profile_project",
                         record_id=project.id,
                         field_name="all",

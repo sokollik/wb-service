@@ -159,6 +159,22 @@ class ProfileController:
         stats = self.es_service.get_index_stats()
         return stats
 
+    @profile_controller.patch("/{eid}", summary="Редактирование профиля сотрудника")
+    @exception_handler
+    async def edit_profile_by_eid(
+        self,
+        eid: str,
+        profile_data: ProfileUpdateSchema,
+        current_user: CurrentUser = Depends(
+            CheckPermissionDep("profile", "update")
+        ),
+    ):
+        return await self.profile_service.update_profile(
+            eid=eid,
+            profile_data=profile_data,
+            changed_by_eid=current_user.eid,
+        )
+
     @profile_controller.get("/{eid}", summary="Просмотр профиля сотрудника")
     @exception_handler
     async def get_profile_by_eid(
