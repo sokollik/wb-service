@@ -7,17 +7,23 @@ import pandas as pd
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.common.common_exc import NotFoundHttpException
+from core.common.common_exc import (
+    ForbiddenHttpException,
+    NotFoundHttpException,
+)
 from core.common.common_repo import CommonRepository
+from core.models.emploee import EmployeeOrm
 from core.models.enums import ProfileOperationType
 from core.models.profile import (
     ProfileChangeLogOrm,
     ProfileOrm,
     ProfileProjectOrm,
 )
+from core.models.rbac import RoleEnum
 from core.repositories.profile_repo import ProfileRepository
 from core.schemas.profile_schema import (
     ProfileExportFilter,
+    ProfileHrUpdateSchema,
     ProfileUpdateSchema,
 )
 from core.services.elastic_search_service import EmployeeElasticsearchService
@@ -104,6 +110,7 @@ class ProfileService:
         eid: str,
         profile_data: ProfileUpdateSchema,
         changed_by_eid: str | None = None,
+        actor_roles: list[str] | None = None,
     ):
         profile = await self.common.get_one(
             ProfileOrm, where_stmt=ProfileOrm.employee_id == eid
@@ -112,6 +119,64 @@ class ProfileService:
             raise NotFoundHttpException(name="profile")
 
         actor_eid = changed_by_eid or eid
+
+        if isinstance(profile_data, ProfileHrUpdateSchema):
+            roles = actor_roles or []
+            is_hr_or_admin = (
+                RoleEnum.HR.value in roles or RoleEnum.ADMIN.value in roles
+            )
+            hr_fields = profile_data.model_dump(
+                exclude_unset=True,
+                include={
+                    "full_name",
+                    "position",
+                    "organization_unit",
+                    "birth_date",
+                    "hire_date",
+                    "work_phone",
+                    "work_email",
+                    "work_band",
+                    "hrbp_eid",
+                    "is_fired",
+                },
+            )
+            if hr_fields and not is_hr_or_admin:
+                raise ForbiddenHttpException(
+                    detail="Только HR/admin может редактировать данные сотрудника",
+                )
+
+            if hr_fields:
+                employee = await self.common.get_one(
+                    EmployeeOrm, where_stmt=EmployeeOrm.eid == eid
+                )
+                if employee is None:
+                    raise NotFoundHttpException(name="employee")
+
+                for field, new_value in hr_fields.items():
+                    old_value = getattr(employee, field)
+                    if old_value != new_value:
+                        await self.common.add(
+                            ProfileChangeLogOrm(
+                                profile_id=profile.id,
+                                changed_by_eid=actor_eid,
+                                table_name="employee",
+                                record_id=profile.id,
+                                field_name=field,
+                                old_value=await self._serialize_value(
+                                    old_value
+                                ),
+                                new_value=await self._serialize_value(
+                                    new_value
+                                ),
+                                operation=ProfileOperationType.UPDATE,
+                            )
+                        )
+
+                await self.common.update_stmt(
+                    table=EmployeeOrm,
+                    where_stmt=EmployeeOrm.eid == eid,
+                    values=hr_fields,
+                )
 
         if (
             profile_data.personal_phone is not None

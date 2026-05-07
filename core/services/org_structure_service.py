@@ -300,3 +300,110 @@ class OrgStructureService:
         unit_dict = dict(rows[0])
         unit_dict = self._map_manager(unit_dict)
         return OrgUnitBaseSchema.model_validate(unit_dict)
+
+    async def remove_manager(
+        self, unit_id: int, changed_by_eid: str
+    ) -> OrgUnitBaseSchema:
+        org_unit = await self.common.get_one(
+            OrgUnitOrm, OrgUnitOrm.id == unit_id
+        )
+        if not org_unit:
+            raise NotFoundHttpException(name="org_unit")
+
+        if org_unit.manager_eid is None:
+            raise WrongParametersHttpException(params="manager_eid")
+
+        old_manager_eid = org_unit.manager_eid
+        await self.common.update_stmt(
+            table=OrgUnitOrm,
+            where_stmt=(OrgUnitOrm.id == unit_id),
+            values={"manager_eid": None},
+        )
+
+        await self._log_change(
+            org_unit_id=unit_id,
+            changed_by_eid=changed_by_eid,
+            field_name="manager_eid",
+            old_value=old_manager_eid,
+            new_value=None,
+            operation=ProfileOperationType.UPDATE,
+        )
+
+        rows = await self.org_structure_repo.get_org_units(id=unit_id)
+        unit_dict = dict(rows[0])
+        unit_dict = self._map_manager(unit_dict)
+        return OrgUnitBaseSchema.model_validate(unit_dict)
+
+    async def add_employee(
+        self, unit_id: int, employee_eid: str, changed_by_eid: str
+    ) -> None:
+        org_unit = await self.common.get_one(
+            OrgUnitOrm, OrgUnitOrm.id == unit_id
+        )
+        if not org_unit:
+            raise NotFoundHttpException(name="org_unit")
+
+        employee = await self.common.get_one(
+            EmployeeOrm, EmployeeOrm.eid == employee_eid
+        )
+        if not employee:
+            raise NotFoundHttpException(name="employee")
+
+        old_unit_id = employee.organization_unit
+        if old_unit_id == unit_id:
+            raise WrongParametersHttpException(params="employee_eid")
+
+        await self.common.update_stmt(
+            table=EmployeeOrm,
+            where_stmt=(EmployeeOrm.eid == employee_eid),
+            values={"organization_unit": unit_id},
+        )
+
+        await self._log_change(
+            org_unit_id=unit_id,
+            changed_by_eid=changed_by_eid,
+            field_name="employee",
+            old_value=None,
+            new_value={
+                "eid": employee_eid,
+                "previous_unit_id": old_unit_id,
+            },
+            operation=ProfileOperationType.CREATE,
+        )
+
+        await self.sync_service.sync_employee(eid=employee_eid)
+
+    async def remove_employee(
+        self, unit_id: int, employee_eid: str, changed_by_eid: str
+    ) -> None:
+        org_unit = await self.common.get_one(
+            OrgUnitOrm, OrgUnitOrm.id == unit_id
+        )
+        if not org_unit:
+            raise NotFoundHttpException(name="org_unit")
+
+        employee = await self.common.get_one(
+            EmployeeOrm, EmployeeOrm.eid == employee_eid
+        )
+        if not employee:
+            raise NotFoundHttpException(name="employee")
+
+        if employee.organization_unit != unit_id:
+            raise WrongParametersHttpException(params="employee_eid")
+
+        await self.common.update_stmt(
+            table=EmployeeOrm,
+            where_stmt=(EmployeeOrm.eid == employee_eid),
+            values={"organization_unit": None},
+        )
+
+        await self._log_change(
+            org_unit_id=unit_id,
+            changed_by_eid=changed_by_eid,
+            field_name="employee",
+            old_value={"eid": employee_eid},
+            new_value=None,
+            operation=ProfileOperationType.DELETE,
+        )
+
+        await self.sync_service.sync_employee(eid=employee_eid)

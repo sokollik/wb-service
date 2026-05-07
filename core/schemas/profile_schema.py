@@ -68,6 +68,19 @@ class ProfileUpdateSchema(BaseModel):
     projects: list[ProjectUpdateSchema] | None = None
 
 
+class ProfileHrUpdateSchema(ProfileUpdateSchema):
+    full_name: str | None = None
+    position: str | None = None
+    organization_unit: int | None = None
+    birth_date: date | None = None
+    hire_date: date | None = None
+    work_phone: str | None = None
+    work_email: str | None = None
+    work_band: str | None = None
+    hrbp_eid: str | None = None
+    is_fired: bool | None = None
+
+
 class ProfileChangeLogSchema(BaseModel):
     id: int
     profile_id: int

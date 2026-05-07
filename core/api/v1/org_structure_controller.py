@@ -122,6 +122,60 @@ class OrgStructureController:
             unit_id, manager_eid, current_user.eid
         )
 
+    @org_structure_controller.delete(
+        "/units/remove_manager",
+        summary="Удалить назначенного руководителя подразделения",
+    )
+    @exception_handler
+    async def remove_manager(
+        self,
+        unit_id: int,
+        current_user: CurrentUser = Depends(
+            CheckPermissionDep("org", "manage")
+        ),
+    ):
+        return await self.org_structure_service.remove_manager(
+            unit_id, current_user.eid
+        )
+
+    @org_structure_controller.post(
+        "/units/add_employee",
+        summary="Добавить сотрудника в подразделение",
+        status_code=204,
+    )
+    @exception_handler
+    async def add_employee(
+        self,
+        unit_id: int,
+        employee_eid: str,
+        current_user: CurrentUser = Depends(
+            CheckPermissionDep("org", "manage")
+        ),
+    ):
+        await self.org_structure_service.add_employee(
+            unit_id, employee_eid, current_user.eid
+        )
+        return
+
+    @org_structure_controller.delete(
+        "/units/remove_employee",
+        summary="Удалить сотрудника из подразделения",
+        status_code=204,
+    )
+    @exception_handler
+    async def remove_employee(
+        self,
+        unit_id: int,
+        employee_eid: str,
+        current_user: CurrentUser = Depends(
+            CheckPermissionDep("org", "manage")
+        ),
+    ):
+        await self.org_structure_service.remove_employee(
+            unit_id, employee_eid, current_user.eid
+        )
+        return
+
     @org_structure_controller.get(
         "/units/log", summary="История изменений подразделения"
     )
