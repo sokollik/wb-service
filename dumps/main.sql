@@ -268,8 +268,8 @@ INSERT INTO profile (employee_id, personal_phone, telegram, about_me, avatar_id)
 
 INSERT INTO profile_project (profile_id, name, start_d, end_d, position, link) VALUES
 ((SELECT id FROM profile WHERE employee_id = '3b3e359f-63a2-5b26-b0e7-6dfbc695bd5e'), 'Цифровая трансформация банка', '2023-01-01', NULL, 'Руководитель программы', NULL),
-((SELECT id FROM profile WHERE employee_id = '83dd83bc-f2ae-598f-bf99-cad03ad679b4'), 'Личный кабинет клиента', '2024-01-01', '2024-12-31', 'Frontend Developer', 'https://youtrack.wb.ru/issue/WB-1001'),
-((SELECT id FROM profile WHERE employee_id = 'e7e6ebed-49e8-53db-b116-b433c59c403c'), 'Редизайн мобильного приложения', '2024-06-01', NULL, 'Tech Lead', 'https://youtrack.wb.ru/issue/WB-2004'),
+((SELECT id FROM profile WHERE employee_id = '83dd83bc-f2ae-598f-bf99-cad03ad679b4'), 'Личный кабинет клиента', '2024-01-01', '2024-12-31', 'Frontend Developer', 'https://max.ru'),
+((SELECT id FROM profile WHERE employee_id = 'e7e6ebed-49e8-53db-b116-b433c59c403c'), 'Редизайн мобильного приложения', '2024-06-01', NULL, 'Tech Lead', 'https://max.ru'),
 ((SELECT id FROM profile WHERE employee_id = 'b69d7d29-3507-5f50-8b43-83c03e73702a'), 'Android приложение WB Bank', '2023-05-01', NULL, 'Lead Android Developer', NULL);
 
 INSERT INTO profile_vacation (profile_id, is_planned, start_date, end_date, substitute_eid, comment, is_official) VALUES

@@ -1,6 +1,8 @@
+from io import BytesIO
 from typing import List
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 from fastapi_restful.cbv import cbv
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -42,6 +44,27 @@ class OrgStructureController:
         _current_user: CurrentUser = Depends(CheckPermissionDep("org", "read")),
     ) -> List[OrgUnitHierarchySchema]:
         return await self.org_structure_service.get_org_structure_hierarchy()
+
+    @org_structure_controller.get(
+        "/hierarchy/export",
+        summary="Экспорт иерархии подразделений и сотрудников в Excel",
+        response_class=StreamingResponse,
+    )
+    @exception_handler
+    async def export_org_hierarchy(
+        self,
+        _current_user: CurrentUser = Depends(CheckPermissionDep("org", "read")),
+    ):
+        excel_bytes = (
+            await self.org_structure_service.export_org_hierarchy_to_excel()
+        )
+        return StreamingResponse(
+            BytesIO(excel_bytes),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": 'attachment; filename="org_hierarchy.xlsx"'
+            },
+        )
 
     @org_structure_controller.put("/move")
     @exception_handler

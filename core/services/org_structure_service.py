@@ -21,6 +21,7 @@ from core.schemas.org_structure_schema import (
 )
 from core.services.elastic_search_service import EmployeeElasticsearchService
 from core.services.elastic_sync_service import EmployeeSyncService
+from core.utils.excel_util import ExcelUtil
 
 
 class OrgStructureService:
@@ -76,6 +77,100 @@ class OrgStructureService:
         return [
             OrgUnitHierarchySchema.model_validate(unit) for unit in root_units
         ]
+
+    async def export_org_hierarchy_to_excel(self) -> bytes:
+        all_units_mappings = await self.org_structure_repo.get_org_units()
+        all_employees = await self.org_structure_repo.get_employees_by_unit()
+
+        employees_by_unit: dict[int, list[dict]] = {}
+        for emp in all_employees:
+            employees_by_unit.setdefault(emp["organization_unit"], []).append(
+                dict(emp)
+            )
+
+        units_by_id: dict[int, dict] = {}
+        root_units: list[dict] = []
+        for row_mapping in all_units_mappings:
+            unit_dict = dict(row_mapping)
+            unit_dict["children"] = []
+            units_by_id[unit_dict["id"]] = unit_dict
+
+        for unit_dict in units_by_id.values():
+            parent_id = unit_dict.get("parent_id")
+            if parent_id is None:
+                root_units.append(unit_dict)
+            elif parent_id in units_by_id:
+                units_by_id[parent_id]["children"].append(unit_dict)
+
+        unit_type_ru = {
+            "Department": "Департамент",
+            "Management": "Управление",
+            "Division": "Отдел",
+            "Group": "Группа",
+            "ProjectTeam": "Проектная команда",
+        }
+
+        rows: list[dict] = []
+
+        def _walk(unit: dict, level: int) -> None:
+            indent = "    " * level
+            prefix = f"{indent}└─ " if level > 0 else ""
+            manager_name = unit.get("manager_full_name") or ""
+
+            raw_type = (
+                unit["unit_type"].value
+                if hasattr(unit["unit_type"], "value")
+                else str(unit["unit_type"])
+            )
+
+            rows.append(
+                {
+                    "Подразделение": f"{prefix}{unit['name']}",
+                    "Тип": unit_type_ru.get(raw_type, raw_type),
+                    "Руководитель": manager_name,
+                    "ФИО сотрудника": "",
+                    "Должность": "",
+                    "Дата найма": "",
+                }
+            )
+
+            for emp in employees_by_unit.get(unit["id"], []):
+                rows.append(
+                    {
+                        "Подразделение": f"{indent}    • {unit['name']}",
+                        "Тип": "",
+                        "Руководитель": "",
+                        "ФИО сотрудника": emp["full_name"],
+                        "Должность": emp["position"],
+                        "Дата найма": (
+                            emp["hire_date"].strftime("%d.%m.%Y")
+                            if emp["hire_date"]
+                            else ""
+                        ),
+                    }
+                )
+
+            for child in unit["children"]:
+                _walk(child, level + 1)
+
+        for root in root_units:
+            _walk(root, 0)
+
+        excel = ExcelUtil()
+        excel.create_writer()
+        excel.export(
+            data=rows,
+            columns=[
+                "Подразделение",
+                "Тип",
+                "Руководитель",
+                "ФИО сотрудника",
+                "Должность",
+                "Дата найма",
+            ],
+            sheet_name="Иерархия",
+        )
+        return excel.close_writer()
 
     async def move_org_unit(
         self, unit_id: int, new_parent_id: int | None = None

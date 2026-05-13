@@ -40,6 +40,22 @@ class OrgStructureRepository:
 
         return result.mappings().all()
 
+    async def get_employees_by_unit(self):
+        stmt = (
+            select(
+                EmployeeOrm.eid,
+                EmployeeOrm.full_name,
+                EmployeeOrm.position,
+                EmployeeOrm.hire_date,
+                EmployeeOrm.organization_unit,
+            )
+            .where(EmployeeOrm.organization_unit.isnot(None))
+            .where(EmployeeOrm.is_fired.is_(False))
+            .order_by(EmployeeOrm.organization_unit, EmployeeOrm.full_name)
+        )
+        result = await self.session.execute(stmt)
+        return result.mappings().all()
+
     async def is_parent(self, parent_id: int, child_id: int) -> bool:
         recursive_cte = (
             select(OrgUnitOrm.id)
