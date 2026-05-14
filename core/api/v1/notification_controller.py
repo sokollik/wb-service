@@ -178,41 +178,6 @@ class NotificationController:
             user_eid=current_user.eid,
         )
 
-<<<<<<< HEAD
-    @notification_router.get(
-        "/preferences",
-        response_model=NotificationPreferencesSchema,
-    )
-    @exception_handler
-    async def get_preferences(
-        self,
-        current_user: CurrentUser = Depends(
-            CheckPermissionDep("notifications", "read")
-        ),
-    ):
-        return await self.notification_service.get_preferences(
-            user_eid=current_user.eid
-        )
-
-    @notification_router.patch(
-        "/preferences",
-        response_model=NotificationPreferencesSchema,
-    )
-    @exception_handler
-    async def update_preferences(
-        self,
-        data: NotificationPreferencesUpdateSchema,
-        current_user: CurrentUser = Depends(
-            CheckPermissionDep("notifications", "manage")
-        ),
-    ):
-        return await self.notification_service.update_preferences(
-            user_eid=current_user.eid,
-            data=data,
-        )
-
-=======
->>>>>>> 03e954a (Fixed notifications)
     @notification_router.post(
         "/",
         response_model=int,
