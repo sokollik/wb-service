@@ -34,7 +34,7 @@ class ProfileSchema(BaseModel):
     full_name: str
     avatar_id: int | None = None
     position: str
-    org_unit: str
+    org_unit: str | None = None
     birth_date: date
     hire_date: date
     personal_phone: str | None = None
@@ -110,6 +110,7 @@ class ProfileExportFilter(BaseModel):
 
 class EmployeeSuggestion(BaseModel):
     """Предложение для автодополнения"""
+
     eid: str
     full_name: str
     position: str
@@ -118,6 +119,7 @@ class EmployeeSuggestion(BaseModel):
 
 class EmployeeSearchResult(BaseModel):
     """Результат поиска сотрудника"""
+
     eid: str
     full_name: str
     position: str
@@ -131,6 +133,7 @@ class EmployeeSearchResult(BaseModel):
 
 class SearchResponse(BaseModel):
     """Ответ от поиска"""
+
     total: int
     results: List[EmployeeSearchResult]
     error: str | None = None
@@ -138,6 +141,7 @@ class SearchResponse(BaseModel):
 
 class SuggestResponse(BaseModel):
     """Ответ от автодополнения"""
+
     suggestions: List[EmployeeSuggestion]
 
 
