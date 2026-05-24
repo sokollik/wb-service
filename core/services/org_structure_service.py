@@ -173,7 +173,7 @@ class OrgStructureService:
         return excel.close_writer()
 
     async def move_org_unit(
-        self, unit_id: int, new_parent_id: int | None = None
+        self, unit_id: int, new_parent_id: int | None = None, changed_by_eid: str = None
     ):
         if unit_id == new_parent_id:
             raise WrongParametersHttpException(params="new_parent_id")
@@ -181,6 +181,8 @@ class OrgStructureService:
         unit = await self.org_structure_repo.get_org_units(id=unit_id)
         if not unit:
             raise NotFoundHttpException(name="org_unit")
+
+        old_parent_id = dict(unit[0]).get("parent_id")
 
         if new_parent_id is not None:
             new_parent = await self.org_structure_repo.get_org_units(
@@ -200,6 +202,16 @@ class OrgStructureService:
             where_stmt=(OrgUnitOrm.id == unit_id),
             values={"parent_id": new_parent_id},
         )
+
+        if changed_by_eid:
+            await self._log_change(
+                org_unit_id=unit_id,
+                changed_by_eid=changed_by_eid,
+                field_name="parent_id",
+                old_value=old_parent_id,
+                new_value=new_parent_id,
+                operation=ProfileOperationType.UPDATE,
+            )
 
         await self.sync_service.sync_all_employees()
 

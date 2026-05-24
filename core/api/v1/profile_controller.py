@@ -63,6 +63,19 @@ class ProfileController:
         web_url = os.getenv("WEB_URL")
         return web_url + f"/profile/{current_user.eid}"
 
+    @profile_controller.get("/share/{eid}")
+    @exception_handler
+    async def share_profile_by_eid(
+        self,
+        eid: str,
+        _current_user: CurrentUser = Depends(
+            CheckPermissionDep("profile", "read")
+        ),
+    ) -> str:
+        await self.profile_service.get_my_profile(eid=eid)
+        web_url = os.getenv("WEB_URL")
+        return web_url + f"/profile/{eid}"
+
     @profile_controller.patch("/me")
     @exception_handler
     async def edit_profile(

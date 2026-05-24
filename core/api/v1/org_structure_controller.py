@@ -75,7 +75,7 @@ class OrgStructureController:
         _current_user: CurrentUser = Depends(CheckPermissionDep("org", "manage")),
     ):
         return await self.org_structure_service.move_org_unit(
-            unit_id=unit_id, new_parent_id=new_parent_id
+            unit_id=unit_id, new_parent_id=new_parent_id, changed_by_eid=_current_user.eid
         )
 
     @org_structure_controller.post(
