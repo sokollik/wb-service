@@ -1,7 +1,7 @@
 from io import BytesIO
 from typing import List
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from fastapi_restful.cbv import cbv
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -207,5 +207,7 @@ class OrgStructureController:
         self,
         unit_id: int,
         _current_user: CurrentUser = Depends(CheckPermissionDep("org", "manage")),
+        page: int = Query(1, ge=1),
+        size: int = Query(20, ge=1, le=100),
     ) -> list[OrgChangeLogShema]:
-        return await self.org_structure_service.get_org_unit_edit_log(unit_id)
+        return await self.org_structure_service.get_org_unit_edit_log(unit_id, page=page, size=size)

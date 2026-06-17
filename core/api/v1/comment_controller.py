@@ -1,6 +1,6 @@
 from typing import Literal
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi_restful.cbv import cbv
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -101,7 +101,9 @@ class CommentController:
         self,
         comment_id: int,
         current_user: CurrentUser = Depends(CheckPermissionDep("comments", "delete")),
+        page: int = Query(1, ge=1),
+        size: int = Query(20, ge=1, le=100),
     ):
         return await self.comment_service.get_comment_edit_log(
-            comment_id=comment_id
+            comment_id=comment_id, page=page, size=size
         )

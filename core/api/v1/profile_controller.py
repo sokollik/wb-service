@@ -147,9 +147,11 @@ class ProfileController:
         current_user: CurrentUser = Depends(
             CheckPermissionDep("profile", "manage")
         ),
+        page: int = Query(1, ge=1),
+        size: int = Query(20, ge=1, le=100),
     ) -> List[ProfileChangeLogSchema]:
         return await self.profile_service.get_profile_edit_log(
-            eid=current_user.eid
+            eid=current_user.eid, page=page, size=size
         )
 
     @profile_controller.get("/export")

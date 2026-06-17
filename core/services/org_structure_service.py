@@ -352,10 +352,12 @@ class OrgStructureService:
         await self.sync_service.sync_all_employees()
         return None
 
-    async def get_org_unit_edit_log(self, unit_id: int):
+    async def get_org_unit_edit_log(self, unit_id: int, page: int = 1, size: int = 20):
         logs = await self.common.get_all_scalars(
             OrgChangeLogOrm,
             where_stmt=OrgChangeLogOrm.org_unit_id == unit_id,
+            limit=size,
+            offset=(page - 1) * size,
         )
         processed_logs = []
         for log in logs:

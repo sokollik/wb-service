@@ -308,10 +308,12 @@ class CommentService:
         )
         await self.common_repo.add(log_entry)
 
-    async def get_comment_edit_log(self, comment_id: int):
+    async def get_comment_edit_log(self, comment_id: int, page: int = 1, size: int = 20):
         logs = await self.common_repo.get_all_scalars(
             CommentChangeLogOrm,
             where_stmt=CommentChangeLogOrm.comment_id == comment_id,
+            limit=size,
+            offset=(page - 1) * size,
         )
         processed_logs = []
         for log in logs:

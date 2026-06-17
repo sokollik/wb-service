@@ -362,7 +362,7 @@ class ProfileService:
         except (json.JSONDecodeError, TypeError):
             return value
 
-    async def get_profile_edit_log(self, eid: str):
+    async def get_profile_edit_log(self, eid: str, page: int = 1, size: int = 20):
         profile = await self.common.get_one(
             ProfileOrm, where_stmt=ProfileOrm.employee_id == eid
         )
@@ -372,6 +372,8 @@ class ProfileService:
         logs = await self.common.get_all_scalars(
             ProfileChangeLogOrm,
             where_stmt=ProfileChangeLogOrm.profile_id == profile.id,
+            limit=size,
+            offset=(page - 1) * size,
         )
 
         processed_logs = []

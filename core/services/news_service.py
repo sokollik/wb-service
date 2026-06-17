@@ -621,10 +621,12 @@ class NewsService:
         )
         await self.common_repo.add(log_entry)
 
-    async def get_news_edit_log(self, news_id: int):
+    async def get_news_edit_log(self, news_id: int, page: int = 1, size: int = 20):
         logs = await self.common_repo.get_all_scalars(
             NewsChangeLogOrm,
             where_stmt=NewsChangeLogOrm.news_id == news_id,
+            limit=size,
+            offset=(page - 1) * size,
         )
         processed_logs = []
         for log in logs:

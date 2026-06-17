@@ -196,8 +196,10 @@ class NewsController:
         current_user: CurrentUser = Depends(
             CheckPermissionDep("news", "manage", required_roles=["admin"])
         ),
+        page: int = Query(1, ge=1),
+        size: int = Query(20, ge=1, le=100),
     ):
-        return await self.news_service.get_news_edit_log(news_id=news_id)
+        return await self.news_service.get_news_edit_log(news_id=news_id, page=page, size=size)
 
     @news_router.post("/{news_id}/acknowledge")
     @exception_handler
