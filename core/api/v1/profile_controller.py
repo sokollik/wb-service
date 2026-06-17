@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Query
 from fastapi_restful.cbv import cbv
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.api.deps import CheckPermissionDep, CurrentUser
+from core.api.deps import CheckPermissionDep, CurrentUser, get_current_user
 from core.schemas.profile_schema import (
     ProfileChangeLogSchema,
     ProfileExportFilter,
@@ -81,9 +81,7 @@ class ProfileController:
     async def edit_profile(
         self,
         profile_data: ProfileUpdateSchema,
-        current_user: CurrentUser = Depends(
-            CheckPermissionDep("profile", "update")
-        ),
+        current_user: CurrentUser = Depends(get_current_user),
     ):
         return await self.profile_service.update_profile(
             eid=current_user.eid, profile_data=profile_data

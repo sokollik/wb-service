@@ -35,7 +35,7 @@ class NotificationOrm(Base):
     )
     user_eid = Column(
         String,
-        ForeignKey("employee.eid", ondelete="CASCADE"),
+        ForeignKey("employee.eid", ondelete="CASCADE"),  # Проверь, что в EmployeeOrm __tablename__ = "employee"
         nullable=False,
         index=True,
     )
@@ -158,6 +158,7 @@ class NotificationPreferencesOrm(Base):
     id = Column(
         sa.BigInteger,
         primary_key=True,
+        autoincrement=True,  # <-- ИСПРАВЛЕНО: Добавлен автоинкремент
     )
     user_eid = Column(
         String,
@@ -215,4 +216,8 @@ class NotificationPreferencesOrm(Base):
         nullable=False,
         server_default=func.now(),
         onupdate=func.now(),
+    )
+
+    __table_args__ = (
+        UniqueConstraint("user_eid", name="uq_notification_preferences_user_eid"),
     )
