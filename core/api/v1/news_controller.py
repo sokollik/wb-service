@@ -1,22 +1,20 @@
 from datetime import datetime
 from typing import List, Literal, Optional
-
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, BackgroundTasks
 from fastapi_restful.cbv import cbv
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.api.deps import CurrentUser, require_roles, CheckPermissionDep
+from core.api.deps import CurrentUser, CheckPermissionDep
 from core.models.enums import NewsStatus
 from core.schemas.news_schema import (
     AcknowledgementStatusSchema,
     CategoryCreateSchema,
     CategorySchema,
     NewsCreateSchema,
-    NewsFullSchema,
-    NewsListResponseSchema,
     NewsUpdateSchema,
 )
 from core.services.news_service import NewsService
+from core.services.notification_event_service import NotificationEventService
 from core.utils.common_util import exception_handler
 from core.utils.db_util import get_session_obj
 
@@ -126,13 +124,25 @@ class NewsController:
     async def create_news(
         self,
         data: NewsCreateSchema,
+        background_tasks: BackgroundTasks, 
         current_user: CurrentUser = Depends(
             CheckPermissionDep("news", "create", required_roles=["admin", "curator"])
         ),
     ):
-        return await self.news_service.create_news(
+        news_id = await self.news_service.create_news(
             author_id=current_user.eid, data=data
         )
+        if getattr(data, "status", None) == NewsStatus.ACTIVE:
+            notification_service = NotificationEventService(session=self.session)
+            background_tasks.add_task(
+                notification_service.notify_news_published,
+                news_id=news_id,
+                news_title=data.title,
+                author_id=current_user.eid,
+                is_mandatory=getattr(data, "is_mandatory", False)
+            )
+
+        return news_id
 
     @news_router.patch("/{news_id}")
     @exception_handler
@@ -140,13 +150,26 @@ class NewsController:
         self,
         news_id: int,
         data: NewsUpdateSchema,
+        background_tasks: BackgroundTasks,
         current_user: CurrentUser = Depends(
             CheckPermissionDep("news", "update", required_roles=["admin", "curator"])
         ),
     ):
-        return await self.news_service.update_news(
+        result = await self.news_service.update_news(
             news_id=news_id, user_eid=current_user.eid, data=data
         )
+        
+        if getattr(data, "status", None) == NewsStatus.ACTIVE:
+            notification_service = NotificationEventService(session=self.session)
+            background_tasks.add_task(
+                notification_service.notify_news_published,
+                news_id=news_id,
+                news_title=getattr(data, "title", "Новая новость"), 
+                author_id=current_user.eid,
+                is_mandatory=getattr(data, "is_mandatory", False)
+            )
+
+        return result
 
     @news_router.delete("/{news_id}")
     @exception_handler
@@ -198,8 +221,10 @@ class NewsController:
         current_user: CurrentUser = Depends(
             CheckPermissionDep("news", "manage", required_roles=["admin"])
         ),
+        page: int = Query(1, ge=1),
+        size: int = Query(20, ge=1, le=100),
     ):
-        return await self.news_service.get_news_edit_log(news_id=news_id)
+        return await self.news_service.get_news_edit_log(news_id=news_id, page=page, size=size)
 
     @news_router.post("/{news_id}/acknowledge")
     @exception_handler

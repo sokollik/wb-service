@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from core.api.v1.v1 import v1_router
 from core.config.settings import get_settings
 from core.services.elastic_sync_service import EmployeeSyncService
+from core.services.rbac_service import RBACService
 from core.utils.db_util import get_session
 from core.utils.elastic_search_util import get_document_es_service, get_elasticsearch_service
 from core.utils.scheduler import scheduled_news_publisher
@@ -25,6 +26,14 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    try:
+        async with get_session() as db_session:
+            await RBACService(db_session).initialize_default_data()
+            logger.info("RBAC default roles/permissions ensured")
+    except Exception as e:
+        logger.error(f"Error initializing RBAC defaults: {e}")
+        logger.error(traceback.format_exc())
+
     try:
         es_service = get_elasticsearch_service()
         es_service.create_index()

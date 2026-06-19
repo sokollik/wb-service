@@ -148,7 +148,7 @@ class RBACService:
     async def check_permission(
         self, user_eid: str, resource: str, action: str
     ) -> bool:
- 
+
         return await self.rbac_repo.check_user_permission(
             user_eid=user_eid, resource=resource, action=action
         )
@@ -178,35 +178,39 @@ class RBACService:
 
         return False
 
+    @staticmethod
+    def has_role(user_roles: List[str], required_roles: List[str]) -> bool:
+        return any(role in user_roles for role in required_roles)
+
+    async def check_role_permission(
+        self, user_roles: List[str], resource: str, action: str
+    ) -> bool:
+        return await self.rbac_repo.check_role_permission(
+            role_names=user_roles, resource=resource, action=action
+        )
+
     async def enforce_permission(
         self,
-        user_eid: str,
+        user_roles: List[str],
         resource: str,
         action: str,
         required_roles: Optional[List[str]] = None,
     ):
-        # Skip RBAC check in development if DISABLE_RBAC is true
         if self.settings.DISABLE_RBAC:
             return
 
-        try:
-            if await self.check_role(user_eid, [RoleEnum.ADMIN]):
-                return
+        if RoleEnum.ADMIN.value in user_roles:
+            return
 
-            if required_roles and await self.check_role(user_eid, required_roles):
-                return
-            has_permission = await self.check_permission(
-                user_eid, resource, action
-            )
-            if not has_permission:
-                raise ForbiddenHttpException(
-                    detail=f"Недостаточно прав для {action} {resource}"
-                )
-        except Exception as e:
-            # If RBAC tables don't exist or are empty, allow access in development
-            if self.settings.DISABLE_RBAC or "does not exist" in str(e).lower() or "relation" in str(e).lower():
-                return
-            raise
+        if required_roles and self.has_role(user_roles, required_roles):
+            return
+
+        if await self.check_role_permission(user_roles, resource, action):
+            return
+
+        raise ForbiddenHttpException(
+            detail=f"Недостаточно прав для {action} {resource}"
+        )
 
     async def get_curator_scopes(
         self, curator_eid: str
@@ -251,9 +255,12 @@ class RBACService:
         )
 
     async def check_scope(
-        self, curator_eid: str, org_unit_id: int
+        self,
+        curator_eid: str,
+        org_unit_id: int,
+        user_roles: Optional[List[str]] = None,
     ) -> bool:
-        if await self.check_role(curator_eid, [RoleEnum.ADMIN]):
+        if user_roles and RoleEnum.ADMIN.value in user_roles:
             return True
 
         return await self.rbac_repo.check_curator_scope(
@@ -265,26 +272,28 @@ class RBACService:
         user_eid: str,
         org_unit_id: int,
         owner_eid: Optional[str] = None,
+        user_roles: Optional[List[str]] = None,
     ) -> bool:
-
-        if await self.check_role(user_eid, [RoleEnum.ADMIN]):
+        if user_roles and RoleEnum.ADMIN.value in user_roles:
             return True
 
         if owner_eid and user_eid == owner_eid:
             return True
 
-        return await self.check_scope(user_eid, org_unit_id)
+        return await self.check_scope(user_eid, org_unit_id, user_roles=user_roles)
 
     async def enforce_scope(
         self,
         curator_eid: str,
         org_unit_id: int,
         owner_eid: Optional[str] = None,
+        user_roles: Optional[List[str]] = None,
     ):
         has_access = await self.check_scope_or_owner(
             user_eid=curator_eid,
             org_unit_id=org_unit_id,
             owner_eid=owner_eid,
+            user_roles=user_roles,
         )
         if not has_access:
             raise ForbiddenHttpException(

@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 class BirthdaySchema(BaseModel):
     eid: str = Field(..., description="ID работника")
     full_name: str = Field(...)
-    org_unit: str = Field(...)
+    org_unit: str | None = Field(None)
     birth_date: date = Field(...)
     telegram: str | None = Field(None)
     telegram_birthday_link: str | None = Field(None)

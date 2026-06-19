@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from fastapi_restful.cbv import cbv
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.api.deps import CurrentUser, require_roles
+from core.api.deps import CheckPermissionDep, CurrentUser
 from core.schemas.folder_schema import (
     FolderCreateSchema,
     FolderSchema,
@@ -28,9 +28,7 @@ class FolderController:
     @exception_handler
     async def get_children(
         self,
-        _current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin", "news_editor"])
-        ),
+        _current_user: CurrentUser = Depends(CheckPermissionDep("documents", "read")),
         parent_id: Optional[int] = Query(None),
     ):
         return await self.folder_service.get_children(parent_id)
@@ -39,9 +37,7 @@ class FolderController:
     @exception_handler
     async def get_tree(
         self,
-        _current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin", "news_editor"])
-        ),
+        _current_user: CurrentUser = Depends(CheckPermissionDep("documents", "read")),
         root_id: Optional[int] = Query(None),
     ):
         return await self.folder_service.get_tree(root_id)
@@ -51,9 +47,7 @@ class FolderController:
     async def get_folder(
         self,
         folder_id: int,
-        _current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin", "news_editor"])
-        ),
+        _current_user: CurrentUser = Depends(CheckPermissionDep("documents", "read")),
     ):
         return await self.folder_service.get_folder(folder_id)
 
@@ -62,7 +56,7 @@ class FolderController:
     async def create_folder(
         self,
         data: FolderCreateSchema,
-        current_user: CurrentUser = Depends(require_roles(["hr", "admin"])),
+        current_user: CurrentUser = Depends(CheckPermissionDep("folders", "manage")),
     ):
         return await self.folder_service.create_folder(
             data=data, created_by=current_user.eid
@@ -74,7 +68,7 @@ class FolderController:
         self,
         folder_id: int,
         data: FolderUpdateSchema,
-        _current_user: CurrentUser = Depends(require_roles(["hr", "admin"])),
+        _current_user: CurrentUser = Depends(CheckPermissionDep("folders", "manage")),
     ):
         return await self.folder_service.update_folder(folder_id, data)
 
@@ -83,6 +77,6 @@ class FolderController:
     async def delete_folder(
         self,
         folder_id: int,
-        _current_user: CurrentUser = Depends(require_roles(["hr", "admin"])),
+        _current_user: CurrentUser = Depends(CheckPermissionDep("folders", "manage")),
     ):
         await self.folder_service.delete_folder(folder_id)

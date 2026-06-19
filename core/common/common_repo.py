@@ -84,6 +84,8 @@ class CommonRepository:
         self,
         from_table: type[T],
         where_stmt=None,
+        limit: int | None = None,
+        offset: int | None = None,
     ) -> list[T]:
         if not isinstance(where_stmt, tuple) and where_stmt is not None:
             where_stmt = (where_stmt,)
@@ -92,6 +94,12 @@ class CommonRepository:
 
         if where_stmt:
             stmt = stmt.where(*where_stmt)
+
+        if offset is not None:
+            stmt = stmt.offset(offset)
+
+        if limit is not None:
+            stmt = stmt.limit(limit)
 
         return (await self.session.execute(stmt)).scalars().all()
 

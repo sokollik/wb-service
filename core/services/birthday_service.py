@@ -38,17 +38,27 @@ class BirthdayService:
 
         upcoming_birthdays = []
         for item in birthdays_data:
-            birth_date: date = item["birth_date"]
+            birth_date: date | None = item["birth_date"]
 
-            future_bday = date(today.year, birth_date.month, birth_date.day)
+            if birth_date is None:
+                continue
 
-            if future_bday < today:
-                future_bday = date(today.year + 1, birth_date.month, birth_date.day)
+            future_bday = self._next_birthday(today, birth_date)
 
             if today <= future_bday <= end_window:
                 upcoming_birthdays.append(BirthdaySchema(**dict(item)))
 
         return upcoming_birthdays
+
+    @staticmethod
+    def _next_birthday(today: date, birth_date: date) -> date:
+        month, day = birth_date.month, birth_date.day
+        if month == 2 and day == 29:
+            day = 28
+        candidate = date(today.year, month, day)
+        if candidate < today:
+            candidate = date(today.year + 1, month, day)
+        return candidate
 
     async def get_telegram_link_for_birthday(self, eid: str, message: str) -> str:
         profile = await self.common.get_one(

@@ -6,10 +6,11 @@ from fastapi import APIRouter, Depends, Query
 from fastapi_restful.cbv import cbv
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.api.deps import CurrentUser, require_roles
+from core.api.deps import CheckPermissionDep, CurrentUser, get_current_user
 from core.schemas.profile_schema import (
     ProfileChangeLogSchema,
     ProfileExportFilter,
+    ProfileHrUpdateSchema,
     ProfileListItemSchema,
     ProfileSchema,
     ProfileUpdateSchema,
@@ -46,7 +47,7 @@ class ProfileController:
     async def view_profile(
         self,
         current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin", "news_editor"])
+            CheckPermissionDep("profile", "read")
         ),
     ) -> ProfileSchema:
         return await self.profile_service.get_my_profile(eid=current_user.eid)
@@ -56,40 +57,73 @@ class ProfileController:
     async def share_profile(
         self,
         current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin", "news_editor"])
+            CheckPermissionDep("profile", "read")
         ),
     ) -> str:
         web_url = os.getenv("WEB_URL")
         return web_url + f"/profile/{current_user.eid}"
+
+    @profile_controller.get("/share/{eid}")
+    @exception_handler
+    async def share_profile_by_eid(
+        self,
+        eid: str,
+        _current_user: CurrentUser = Depends(
+            CheckPermissionDep("profile", "read")
+        ),
+    ) -> str:
+        await self.profile_service.get_my_profile(eid=eid)
+        web_url = os.getenv("WEB_URL")
+        return web_url + f"/profile/{eid}"
 
     @profile_controller.patch("/me")
     @exception_handler
     async def edit_profile(
         self,
         profile_data: ProfileUpdateSchema,
-        current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin", "news_editor"])
-        ),
+        current_user: CurrentUser = Depends(get_current_user),
     ):
         return await self.profile_service.update_profile(
             eid=current_user.eid, profile_data=profile_data
         )
 
-    @profile_controller.get("/list", response_model=List[ProfileListItemSchema])
+    @profile_controller.get(
+        "/list", response_model=List[ProfileListItemSchema]
+    )
     @exception_handler
     async def get_profiles_list(
         self,
-        _current_user: CurrentUser = Depends(require_roles(["hr", "admin"])),
-        eid: Optional[str] = Query(None, description="Фильтр по ID сотрудника"),
-        full_name: Optional[str] = Query(None, description="Поиск по ФИО (частичное совпадение)"),
-        position: Optional[str] = Query(None, description="Поиск по должности (частичное совпадение)"),
-        work_email: Optional[str] = Query(None, description="Поиск по email (частичное совпадение)"),
-        work_band: Optional[str] = Query(None, description="Фильтр по грейду/band"),
-        is_fired: Optional[bool] = Query(None, description="Фильтр по статусу увольнения"),
-        hire_date_from: Optional[date] = Query(None, description="Дата найма от"),
-        hire_date_to: Optional[date] = Query(None, description="Дата найма до"),
+        _current_user: CurrentUser = Depends(
+            CheckPermissionDep("profile", "manage")
+        ),
+        eid: Optional[str] = Query(
+            None, description="Фильтр по ID сотрудника"
+        ),
+        full_name: Optional[str] = Query(
+            None, description="Поиск по ФИО (частичное совпадение)"
+        ),
+        position: Optional[str] = Query(
+            None, description="Поиск по должности (частичное совпадение)"
+        ),
+        work_email: Optional[str] = Query(
+            None, description="Поиск по email (частичное совпадение)"
+        ),
+        work_band: Optional[str] = Query(
+            None, description="Фильтр по грейду/band"
+        ),
+        is_fired: Optional[bool] = Query(
+            None, description="Фильтр по статусу увольнения"
+        ),
+        hire_date_from: Optional[date] = Query(
+            None, description="Дата найма от"
+        ),
+        hire_date_to: Optional[date] = Query(
+            None, description="Дата найма до"
+        ),
         page: int = Query(1, ge=1, description="Номер страницы"),
-        size: int = Query(20, ge=1, le=100, description="Количество записей на странице"),
+        size: int = Query(
+            20, ge=1, le=100, description="Количество записей на странице"
+        ),
     ):
         return await self.profile_service.get_profiles_list(
             eid=eid,
@@ -108,10 +142,14 @@ class ProfileController:
     @exception_handler
     async def get_profile_edit_log(
         self,
-        current_user: CurrentUser = Depends(require_roles(["hr", "admin"])),
+        current_user: CurrentUser = Depends(
+            CheckPermissionDep("profile", "manage")
+        ),
+        page: int = Query(1, ge=1),
+        size: int = Query(20, ge=1, le=100),
     ) -> List[ProfileChangeLogSchema]:
         return await self.profile_service.get_profile_edit_log(
-            eid=current_user.eid
+            eid=current_user.eid, page=page, size=size
         )
 
     @profile_controller.get("/export")
@@ -119,7 +157,9 @@ class ProfileController:
     async def export_profiles(
         self,
         config: ProfileExportFilter = Depends(),
-        _current_user: CurrentUser = Depends(require_roles(["hr", "admin"])),
+        _current_user: CurrentUser = Depends(
+            CheckPermissionDep("profile", "manage")
+        ),
     ):
         return await self.profile_service.export_profiles_to_excel(config)
 
@@ -137,7 +177,7 @@ class ProfileController:
             10, ge=1, le=100, description="Количество результатов"
         ),
         _current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin", "news_editor"])
+            CheckPermissionDep("profile", "read")
         ),
     ) -> SearchResponse:
         result = self.es_service.search_employees(
@@ -154,7 +194,7 @@ class ProfileController:
         q: str = Query("", description="Начало поиска по ФИО"),
         size: int = Query(10, ge=1, le=50, description="Количество подсказок"),
         _current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin", "news_editor"])
+            CheckPermissionDep("profile", "read")
         ),
     ) -> SuggestResponse:
         suggestions = self.es_service.suggest_employees(query=q, size=size)
@@ -165,11 +205,30 @@ class ProfileController:
     async def get_search_stats(
         self,
         _current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin", "news_editor"])
+            CheckPermissionDep("profile", "read")
         ),
     ):
         stats = self.es_service.get_index_stats()
         return stats
+
+    @profile_controller.patch(
+        "/{eid}", summary="Редактирование профиля сотрудника"
+    )
+    @exception_handler
+    async def edit_profile_by_eid(
+        self,
+        eid: str,
+        profile_data: ProfileHrUpdateSchema,
+        current_user: CurrentUser = Depends(
+            CheckPermissionDep("profile", "update")
+        ),
+    ):
+        return await self.profile_service.update_profile(
+            eid=eid,
+            profile_data=profile_data,
+            changed_by_eid=current_user.eid,
+            actor_roles=current_user.roles,
+        )
 
     @profile_controller.get("/{eid}", summary="Просмотр профиля сотрудника")
     @exception_handler
@@ -177,7 +236,7 @@ class ProfileController:
         self,
         eid: str,
         current_user: CurrentUser = Depends(
-            require_roles(["employee", "hr", "admin", "news_editor"])
+            CheckPermissionDep("profile", "read")
         ),
     ) -> ProfileSchema:
         return await self.profile_service.get_profile_by_eid(

@@ -5,7 +5,7 @@ from fastapi.responses import FileResponse
 from fastapi_restful.cbv import cbv
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.api.deps import CurrentUser, require_roles
+from core.api.deps import CheckPermissionDep, CurrentUser
 from core.common.common_exc import NotAllowedHttpException
 from core.schemas.static_schema import UploadSchema
 from core.services.static_service import StaticService
@@ -45,7 +45,7 @@ class StaticController:
         self,
         file: UploadFile,
         data: UploadSchema = Depends(),
-        current_user: CurrentUser = Depends(require_roles(["employee", "hr", "admin", "news_editor"])),
+        current_user: CurrentUser = Depends(CheckPermissionDep("documents", "create")),
     ) -> int:
         """
         info:
@@ -79,7 +79,7 @@ class StaticController:
     async def static_get(
         self,
         id: int,
-        _current_user: CurrentUser = Depends(require_roles(["employee", "hr", "admin", "news_editor"])),
+        _current_user: CurrentUser = Depends(CheckPermissionDep("documents", "read")),
     ) -> FileResponse:
         """
         info:
@@ -95,7 +95,7 @@ class StaticController:
     async def static_delete(
         self,
         id: int,
-        current_user: CurrentUser = Depends(require_roles(["employee", "hr", "admin", "news_editor"])),
+        current_user: CurrentUser = Depends(CheckPermissionDep("documents", "delete")),
     ):
         """
         info:

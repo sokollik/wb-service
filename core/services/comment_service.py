@@ -27,6 +27,7 @@ from core.schemas.comment_schema import (
     CommentUpdateSchema,
     CommentViewSchema,
 )
+from core.services.notification_event_service import NotificationEventService
 
 
 class CommentService:
@@ -35,6 +36,7 @@ class CommentService:
         self.session = session
         self.common_repo = CommonRepository(session=self.session)
         self.comment_repo = CommentRepository(session=self.session)
+        self.notification_event_service = NotificationEventService(session=self.session)
 
     async def get_comments(
         self,
@@ -119,6 +121,21 @@ class CommentService:
                 operation=ProfileOperationType.CREATE,
             )
 
+        if comment.parent_id:
+            parent_comment = await self.common_repo.get_one(
+                from_table=CommentOrm,
+                where_stmt=(CommentOrm.id == comment.parent_id)
+            )
+            if parent_comment and parent_comment.author_id != author_eid:
+                await self.notification_event_service.create_notification(
+                    user_id=parent_comment.author_id,
+                    title="Новый ответ на комментарий",
+                    body="Пользователь ответил на ваш комментарий к новости.",
+                    notification_type="comment_reply",
+                    target_id=new_comment.id
+                )
+
+        # Процессинг упоминаний через @
         await self._process_mentions(new_comment.id, comment.content)
 
         return new_comment.id
@@ -260,8 +277,7 @@ class CommentService:
         )
 
     async def _process_mentions(self, comment_id: int, content: str):
-
-        mention_pattern = re.compile(r"@([\w.]+(?:\s[\w.]+)?)", re.UNICODE)
+        mention_pattern = re.compile(r"@([\w.]+)", re.UNICODE)
         raw_mentions = mention_pattern.findall(content)
 
         if not raw_mentions:
@@ -277,6 +293,13 @@ class CommentService:
             for eid in employees:
                 await self.common_repo.add(
                     MentionOrm(comment_id=comment_id, mentioned_user_id=eid)
+                )
+                await self.notification_event_service.create_notification(
+                    user_id=eid,
+                    title="Упоминание в комментарии",
+                    body="Вас упомянули в комментарии к новости.",
+                    notification_type="comment_mention",
+                    target_id=comment_id
                 )
 
     async def _log_comment_change(
@@ -308,10 +331,12 @@ class CommentService:
         )
         await self.common_repo.add(log_entry)
 
-    async def get_comment_edit_log(self, comment_id: int):
+    async def get_comment_edit_log(self, comment_id: int, page: int = 1, size: int = 20):
         logs = await self.common_repo.get_all_scalars(
             CommentChangeLogOrm,
             where_stmt=CommentChangeLogOrm.comment_id == comment_id,
+            limit=size,
+            offset=(page - 1) * size,
         )
         processed_logs = []
         for log in logs:

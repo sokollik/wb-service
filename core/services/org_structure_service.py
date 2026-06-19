@@ -21,6 +21,7 @@ from core.schemas.org_structure_schema import (
 )
 from core.services.elastic_search_service import EmployeeElasticsearchService
 from core.services.elastic_sync_service import EmployeeSyncService
+from core.utils.excel_util import ExcelUtil
 
 
 class OrgStructureService:
@@ -77,8 +78,102 @@ class OrgStructureService:
             OrgUnitHierarchySchema.model_validate(unit) for unit in root_units
         ]
 
+    async def export_org_hierarchy_to_excel(self) -> bytes:
+        all_units_mappings = await self.org_structure_repo.get_org_units()
+        all_employees = await self.org_structure_repo.get_employees_by_unit()
+
+        employees_by_unit: dict[int, list[dict]] = {}
+        for emp in all_employees:
+            employees_by_unit.setdefault(emp["organization_unit"], []).append(
+                dict(emp)
+            )
+
+        units_by_id: dict[int, dict] = {}
+        root_units: list[dict] = []
+        for row_mapping in all_units_mappings:
+            unit_dict = dict(row_mapping)
+            unit_dict["children"] = []
+            units_by_id[unit_dict["id"]] = unit_dict
+
+        for unit_dict in units_by_id.values():
+            parent_id = unit_dict.get("parent_id")
+            if parent_id is None:
+                root_units.append(unit_dict)
+            elif parent_id in units_by_id:
+                units_by_id[parent_id]["children"].append(unit_dict)
+
+        unit_type_ru = {
+            "Department": "Департамент",
+            "Management": "Управление",
+            "Division": "Отдел",
+            "Group": "Группа",
+            "ProjectTeam": "Проектная команда",
+        }
+
+        rows: list[dict] = []
+
+        def _walk(unit: dict, level: int) -> None:
+            indent = "    " * level
+            prefix = f"{indent}└─ " if level > 0 else ""
+            manager_name = unit.get("manager_full_name") or ""
+
+            raw_type = (
+                unit["unit_type"].value
+                if hasattr(unit["unit_type"], "value")
+                else str(unit["unit_type"])
+            )
+
+            rows.append(
+                {
+                    "Подразделение": f"{prefix}{unit['name']}",
+                    "Тип": unit_type_ru.get(raw_type, raw_type),
+                    "Руководитель": manager_name,
+                    "ФИО сотрудника": "",
+                    "Должность": "",
+                    "Дата найма": "",
+                }
+            )
+
+            for emp in employees_by_unit.get(unit["id"], []):
+                rows.append(
+                    {
+                        "Подразделение": f"{indent}    • {unit['name']}",
+                        "Тип": "",
+                        "Руководитель": "",
+                        "ФИО сотрудника": emp["full_name"],
+                        "Должность": emp["position"],
+                        "Дата найма": (
+                            emp["hire_date"].strftime("%d.%m.%Y")
+                            if emp["hire_date"]
+                            else ""
+                        ),
+                    }
+                )
+
+            for child in unit["children"]:
+                _walk(child, level + 1)
+
+        for root in root_units:
+            _walk(root, 0)
+
+        excel = ExcelUtil()
+        excel.create_writer()
+        excel.export(
+            data=rows,
+            columns=[
+                "Подразделение",
+                "Тип",
+                "Руководитель",
+                "ФИО сотрудника",
+                "Должность",
+                "Дата найма",
+            ],
+            sheet_name="Иерархия",
+        )
+        return excel.close_writer()
+
     async def move_org_unit(
-        self, unit_id: int, new_parent_id: int | None = None
+        self, unit_id: int, new_parent_id: int | None = None, changed_by_eid: str = None
     ):
         if unit_id == new_parent_id:
             raise WrongParametersHttpException(params="new_parent_id")
@@ -86,6 +181,8 @@ class OrgStructureService:
         unit = await self.org_structure_repo.get_org_units(id=unit_id)
         if not unit:
             raise NotFoundHttpException(name="org_unit")
+
+        old_parent_id = dict(unit[0]).get("parent_id")
 
         if new_parent_id is not None:
             new_parent = await self.org_structure_repo.get_org_units(
@@ -105,6 +202,16 @@ class OrgStructureService:
             where_stmt=(OrgUnitOrm.id == unit_id),
             values={"parent_id": new_parent_id},
         )
+
+        if changed_by_eid:
+            await self._log_change(
+                org_unit_id=unit_id,
+                changed_by_eid=changed_by_eid,
+                field_name="parent_id",
+                old_value=old_parent_id,
+                new_value=new_parent_id,
+                operation=ProfileOperationType.UPDATE,
+            )
 
         await self.sync_service.sync_all_employees()
 
@@ -245,10 +352,12 @@ class OrgStructureService:
         await self.sync_service.sync_all_employees()
         return None
 
-    async def get_org_unit_edit_log(self, unit_id: int):
+    async def get_org_unit_edit_log(self, unit_id: int, page: int = 1, size: int = 20):
         logs = await self.common.get_all_scalars(
             OrgChangeLogOrm,
             where_stmt=OrgChangeLogOrm.org_unit_id == unit_id,
+            limit=size,
+            offset=(page - 1) * size,
         )
         processed_logs = []
         for log in logs:
@@ -300,3 +409,110 @@ class OrgStructureService:
         unit_dict = dict(rows[0])
         unit_dict = self._map_manager(unit_dict)
         return OrgUnitBaseSchema.model_validate(unit_dict)
+
+    async def remove_manager(
+        self, unit_id: int, changed_by_eid: str
+    ) -> OrgUnitBaseSchema:
+        org_unit = await self.common.get_one(
+            OrgUnitOrm, OrgUnitOrm.id == unit_id
+        )
+        if not org_unit:
+            raise NotFoundHttpException(name="org_unit")
+
+        if org_unit.manager_eid is None:
+            raise WrongParametersHttpException(params="manager_eid")
+
+        old_manager_eid = org_unit.manager_eid
+        await self.common.update_stmt(
+            table=OrgUnitOrm,
+            where_stmt=(OrgUnitOrm.id == unit_id),
+            values={"manager_eid": None},
+        )
+
+        await self._log_change(
+            org_unit_id=unit_id,
+            changed_by_eid=changed_by_eid,
+            field_name="manager_eid",
+            old_value=old_manager_eid,
+            new_value=None,
+            operation=ProfileOperationType.UPDATE,
+        )
+
+        rows = await self.org_structure_repo.get_org_units(id=unit_id)
+        unit_dict = dict(rows[0])
+        unit_dict = self._map_manager(unit_dict)
+        return OrgUnitBaseSchema.model_validate(unit_dict)
+
+    async def add_employee(
+        self, unit_id: int, employee_eid: str, changed_by_eid: str
+    ) -> None:
+        org_unit = await self.common.get_one(
+            OrgUnitOrm, OrgUnitOrm.id == unit_id
+        )
+        if not org_unit:
+            raise NotFoundHttpException(name="org_unit")
+
+        employee = await self.common.get_one(
+            EmployeeOrm, EmployeeOrm.eid == employee_eid
+        )
+        if not employee:
+            raise NotFoundHttpException(name="employee")
+
+        old_unit_id = employee.organization_unit
+        if old_unit_id == unit_id:
+            raise WrongParametersHttpException(params="employee_eid")
+
+        await self.common.update_stmt(
+            table=EmployeeOrm,
+            where_stmt=(EmployeeOrm.eid == employee_eid),
+            values={"organization_unit": unit_id},
+        )
+
+        await self._log_change(
+            org_unit_id=unit_id,
+            changed_by_eid=changed_by_eid,
+            field_name="employee",
+            old_value=None,
+            new_value={
+                "eid": employee_eid,
+                "previous_unit_id": old_unit_id,
+            },
+            operation=ProfileOperationType.CREATE,
+        )
+
+        await self.sync_service.sync_employee(eid=employee_eid)
+
+    async def remove_employee(
+        self, unit_id: int, employee_eid: str, changed_by_eid: str
+    ) -> None:
+        org_unit = await self.common.get_one(
+            OrgUnitOrm, OrgUnitOrm.id == unit_id
+        )
+        if not org_unit:
+            raise NotFoundHttpException(name="org_unit")
+
+        employee = await self.common.get_one(
+            EmployeeOrm, EmployeeOrm.eid == employee_eid
+        )
+        if not employee:
+            raise NotFoundHttpException(name="employee")
+
+        if employee.organization_unit != unit_id:
+            raise WrongParametersHttpException(params="employee_eid")
+
+        await self.common.update_stmt(
+            table=EmployeeOrm,
+            where_stmt=(EmployeeOrm.eid == employee_eid),
+            values={"organization_unit": None},
+        )
+
+        await self._log_change(
+            org_unit_id=unit_id,
+            changed_by_eid=changed_by_eid,
+            field_name="employee",
+            old_value={"eid": employee_eid},
+            new_value=None,
+            operation=ProfileOperationType.DELETE,
+        )
+
+        await self.sync_service.sync_employee(eid=employee_eid)
